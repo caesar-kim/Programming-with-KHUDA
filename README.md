@@ -1,6 +1,6 @@
 # Programming with KHUDA
  
-## 1주차(2024-07-24)&nbsp; 1-10장. 데이터 탐색과 시각화  
+## [1주차(2024-07-24)&nbsp; 1-10장. 데이터 탐색과 시각화](https://github.com/caesar-kim/Programming-with-KHUDA/blob/main/1st-session.md)
 
 ## 2주차(2024-07-31)&nbsp; 2-1장. 나의 첫 머신러닝, 2-2장. 데이터 다루기 
 
