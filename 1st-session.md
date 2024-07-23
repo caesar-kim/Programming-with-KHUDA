@@ -161,7 +161,55 @@ df_bar_2_pv.plot.bar(x='Year', stacked=True, figsize=(10,7))
 - 3\) 평행 좌표 그래프Parallel coordinates를 통한 그룹별 요소 시각화도 가능.
 &nbsp;&nbsp; 보다 효과적으로 표현하려면 변수별 값을 0~100% 사이로 정규화 하면 된다.
 ### 2.1. 비교 시각화 실습
+```python
+import matplotlib.pyplot as plt
+import pandas as pd
+import datetime
+import seaborn as sns
+import numpy as np
+from math import pi
+from pandas.plotting import parallel_coordinates
+df = pd.read_csv("datasets/nba2021_advanced.csv")
 
+# 히트맵 시각화를 V1을 위한 데이터 전처리
+# 5개 팀만 필터링
+df1 = df[df['Tm'].isin(['ATL', 'BOS', 'BRK', 'CHI', 'CHO'])]
+# 6개 열만 필터링
+df1 = df1[['Tm', 'ORB%', 'TRB%', 'AST%', 'BLK%', 'USG%']]
+# 팀별 요소 평균 전처리
+df1 = df1.groupby('Tm').mean()
+df1.head()
+
+# 히트맵 시각화 V1
+fig = plt.figure(figsize=(8, 8))
+fig.set_facecolor('white')
+plt.pcolor(df1.values)
+
+# x축 column 설정
+plt.xticks(range(len(df1.columns)), df1.columns)
+# y축 column 설정
+plt.yticks(range(len(df1.index)), df1.index)
+# x축, y축 레이블 설정
+plt.xlabel('Value', fontsize=14)
+plt.ylabel('Team', fontsize=14)
+plt.colorbar()
+plt.show()
+
+# 하나의 변숫값에 대한 히트맵 시각화를 위한 데이터 전처리
+# 히트맵 시각화 V2를 위한 데이터 전처리
+
+# 팀 5개만 필터링
+df2 = df[df['Tm'].isin(['ATL', 'BOS', 'BRK', 'CHI', 'CHO'])]
+# 팀명, 연령, 참여 게임 수 열만 필터링
+df2 = df2[['Tm', 'Age', 'G']]
+# 팀 - 연령 기준 평균으로 전처리
+df2 = df2.groupby(['Tm', 'Age']).mean().reset_index()
+# 테이블 피벗
+df = df2.pivot(index='Tm', colums='Age', values='G')
+df2.head()
+
+# 히트맵 시각화 V2
+```
 ### 3.0. 분포 시각화
 - 데이터가 처음 주어졌을 때 어떤 요소가 어떤 비율인지 확인 하는 매우 중요한 단계에서도 많이 사용됨.
 - 연속형(양적 척도)인지, 명목형(질적 척도)인지에 따라 구분해서 그림.  
@@ -200,7 +248,33 @@ df_bar_2_pv.plot.bar(x='Year', stacked=True, figsize=(10,7))
 - 최솟값(제1사분위 - 1.5IQR), 제1사분위(Q1), 제2사분위(Q2, 중앙값), 제3사분위(Q3), 최댓값(제3사분위 + 1.5IQR) 이라는 5가지 수치를 담고 있다.
 - 전체 데이터 50%를 포함하는 박스 부분은 정규분포 평균 중심 좌우 1시그마에 해당하는 관측치 양(68.27%)와 유사하다.
 - 그리고 양쪽 수염 끝까지(99.30%)는 좌우 3시그마(99.73)%과 유사하다.
+- 중앙값이 박스 중앙보다 낮은 위치에 있다면 데이터 분포는 오른쪽(높은 쪽)으로 치우쳐 있을 가능성 높음.
 - 박스플롯 해석 시에 항상 데이터 분포도도 함께 떠올리는 습관이 필요.
 ### 6.1. 박스 플롯 실습
+```python
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+df = pd.read_csv("datasets/50_Startups.csv")
 
+# 세로 박스 플롯
+plt.figure(figsize = (8, 6))
+sns.boxplot(y = 'Profit', data = df)
+plt.show()
+# 가로 박스 플롯
+plt.figure(figsize = (8, 2))
+sns.boxplot(x = 'Profit', data = df)
+plt.show()
+
+# state 구분에 따른 profit 박스 플롯 시각화
+plt.figure(figsize=(8,5))
+sns.boxplot(x="State", y="Profit", data=df)
+plt.show()
+
+# 평균, 데이터 포인트 포함한 박스 플롯 시각화
+sns.boxplot(x="State", y="Profit", showmeans=True, boxprops={'facecolor':'None'}, data=df)
+sns.stripplot(x='State', y='Profit', data=df, jitter=True, marker='0', alpha=0.5, color='black')
+plt.show()
+# 기본 옵션에서 표현되지 않는 평균값 위치와 실제 데이터 포인트들을 추가로 표기하는 작업.
+```
 
