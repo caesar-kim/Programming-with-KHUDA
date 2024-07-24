@@ -300,6 +300,80 @@ parallel_coordinates(df3, 'Tm', ax=axes, colormap='winter', linewidth="0.5")
 &nbsp;&nbsp; &nbsp;&nbsp; 유사한 차트로는 와플 차트인데, 일정한 네모난 조각으로 분포 표현하지만 위계구조는 표현 불가.  
 
 ### 3.1. 분포 시각화 실습
+```python
+!pip install plotly
+!pip install pywaffle
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+import numpy as np
+import plotly.express as px
+from pywaffle import waffle
+df = pd.read_csv("datasets/six_countries_height_samples.csv")
+
+# 기본 히스토그램 시각화
+df1 = df[['height_cm']]    # 신장 칼럼만 필터링
+plt.hist(df1, bins=10, label = 'bins=10')    # 10cm 단위로 히스토그램 시각화
+plt.legend()
+plt.show()
+
+# 남성 여성 히스토그램 시각화
+# 남성 여성 별도 데이터셋 생성
+df1_1 = df[df['sex'].isin(['man'])]
+df1_1 = df1_1[['height_cm']]
+df1_2 = df[df['sex'].isin(['woman'])]
+df1_2 = df1_2[['height_cm']]
+# 10cm 단위로 남성, 여성 신장 히스토그램 시각화
+plt.hist(df1_1, color = 'green', alpha = 0.2, bins=10, label='MAN', density=True)
+plt.hist(df1_2, color = 'red', alpha = 0.2, bins=10, label='WOMAN', density=True)
+plt.legend()
+plt.show()
+
+# 파이차트, 도넛차트 시각화를 위한 데이터 전처리
+df2 = df[['country', 'height_cm']]
+df2 = df2[df.height_cm >= 175]    # 키 175 이상만 추출
+df2 = df2.groupby('country').count().reset_index()
+
+# 파이차트 시각화
+fig = plt.figure(figsize=(8, 8))    # 캔버스 생성
+fig.set_facecolor('white')    # 캔버스 배경색 설정
+ax = fig.add_subplot()    # 프레임 생성
+# 파이차트 출력
+ax.pie(df2.height_cm,
+    labels=df2.country,    # 라벨 출력
+    startangle = 0,     # 시작점 degree 설정
+    counterclock = False    # 시계방향
+    autopct = lambda p: '{:.1f}%'.format(p)     # 퍼센트 자릿 수 설정
+    )
+plt.legend()     # 범례 표시
+plt.show()
+
+# 도넛차트 시각화
+# 차트 형태 옵션 설정
+wedgeprops={'width':0.7, 'edgecolor':'w', 'linewidth': 5}
+plt.pie(df2.height_cm, labels=df2.country, autopct='%.1f%%', startangle=90, counterclock=False, wedgeprops=wedgeprops)
+plt.show()
+
+# 트리맵 차트용 데이터셋 전처리
+df3 = df[['country', 'sex', 'height_cm']]
+df3 = df3[df.height_cm >= 175]
+# 국가 , 성병 단위 신장 175cm 이상 카운팅
+df3 = df3.groupby(['country', 'sex']).count().reset_index()
+df3.head(10)
+
+# 트리맵 차트 시각화
+fig = px.treemap(df3, path=['sex', 'country'], values='height_cm', color='height_cm', color_continuous_scale='viridis')
+fig.show()
+
+# 와플차트 시각화
+fig = plt.figure(FigureClass = Waffle, plots={111: {'values': df2['height_cm'], 'labels': ["{0} ({1})".format(n, v) for n, v in df2['country'].items()],
+        'legend': {'loc': 'upper left', 'bbox_to_anchor': (1.05, 1), 'fontsize':8}, 'title': {'label': 'Waffle chart test', 'loc': 'left'}
+        }
+    },
+    rows=10,
+    figsize=(10, 10)
+)
+```
 ### 4.0. 관계 시각화
 - 산점도scatter plot. 산점도는 단순해서 쉽게 이해하고 표현 가능. 점들의 분포, 추세를 통해 관계를 파악할 수 있다.
 - 산점도 그릴 때는 극단치 줄이는 것이 좋음. 주요 분포 구간으로 압축하는 것이 시각화 효율에 도움.
