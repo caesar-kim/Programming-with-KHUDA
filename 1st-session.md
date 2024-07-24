@@ -254,6 +254,40 @@ for i, row in df3.iterrows():
 plt.tight_layout(pad=3)        # 차트 간 간격 설정
 plt.show()
 ```
+- for문으로 각 팀에 대한 그래프를 그려야 해서 복잡한 편이다. 데이터 값 범위에 따라 반지름 축 눈금 수치를 잘 조절해야 함.
+``` python
+# 방사형 차트를 하나로 시각화
+labels = df3.colums[1:]
+num_labels = len(labels)
+angels = [x/float(num_labels)*(2*pi) for x in range(num_labels)]  # 등분점 생성
+angles += angles[:1]    # 시작점 생성
+
+my_palette = plt.cm.get_cmap("Set2", len(df3.index))
+fig = plt.figure(figsize=(8, 8))
+fig.set_facecolor('white')
+ax = fig.add_subplot(polar=True)
+for i, row in df3.iterrows():
+    color = my_palette(i)
+    data = df3.iloc[i].drop('Tm').tolist()
+    data += data[:1]
+
+    ax.set_theta_offset(pi / 2)    # 시작점
+    ax.set_theta_direction(-1)    # 시계 방향 설정
+    plt.xticks(angels[:-1], labels, fontsize=13)     # 각도 축 눈금 생성
+    ax.tick_params(axis='x', which='major', pad=15)    # 각 축과 눈금 사이 여백 생성
+    ax.set_rlabel_position(0)    # 반지름 축 눈금 라벨 각도 0으로 설정
+    plt.yticks([0, 5, 10, 15, 20], ['0', '5', '10', '15', '20'], fontsize=10)    # 반지름 축 눈금 설정
+    plt.ylim(0, 20)
+    ax.plot(angles, data, color=color, linewidth=2, linestyle-'solid', label=row.Tm)    # 방사형 차트 출력
+    ax.fill(angels, data, color=color, alpha=0.4)    # 도형 안쪽 색상 설정
+plt.legend(loc=(0.9, 0.9))
+plt.show()
+
+# 팀 기준 평행 좌표 그래프 생성
+fig, axes = plt.subplots()
+plt.figure(figsize=(16, 8))    # 그래프 크기 조정
+parallel_coordinates(df3, 'Tm', ax=axes, colormap='winter', linewidth="0.5")
+```
 ### 3.0. 분포 시각화
 - 데이터가 처음 주어졌을 때 어떤 요소가 어떤 비율인지 확인 하는 매우 중요한 단계에서도 많이 사용됨.
 - 연속형(양적 척도)인지, 명목형(질적 척도)인지에 따라 구분해서 그림.  
