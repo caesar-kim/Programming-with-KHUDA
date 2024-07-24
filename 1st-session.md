@@ -383,6 +383,24 @@ fig = plt.figure(FigureClass = Waffle, plots={111: {'values': df2['height_cm'], 
 &nbsp;&nbsp; 버블차트는 원의 면적도 함께 봐야 해서 관측치가 너무 많으면 정보 효율이 떨어짐. 100개가 넘는 관측치라면 데이터 축약하거나 다른 시각화 방법 사용.  
 &nbsp;&nbsp; 버블차트 해석 시 원의 지름이 아닌 면적을 통해 크기를 판단해야 한다. 지름이 2배면 면적은 4배가 된다.
 ### 4.1. 관계 시각화 실습
+```python
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+import numpy as np
+df = pd.read_csv("datasets/50_Startups.csv")
+
+# 기본 산점도 시각화
+plt.scatter(df['R&D Spend'], df['Profit'], s = 40, alpha = 0.4)
+plt.show()
+ax = sns.lmplot(x='R&D Spend', y='Profit', data=df)  # 산점도에 회귀선 추가
+
+# 네 가지 요소의 정보를 포함한 산점도시각화
+plt.scatter(df['R&D Spend'], df['Profit'], s=df['Marketing Spend']*0.001, c=df['Administration'], alpha=0.5, cmap=''Spectral')
+plt.colorbar()
+plt.show()
+# 마케팅 비용은 버블의 크기로 표현하도록 함. 관리비용은 색상으로 표현(붉은색이 작고 푸른색이 큰 것.)
+```
 ### 5.0. 공간 시각화
 - 지리적 위치와 관련된 데이터라면 실제 지도 위 표현이 효과적. 위도, 경도 데이터를 지도에 매핑하여 시각적으로 표현한다. 구글의 GeoMap 이용하면 지명만으로도 공간 시각화 가능.
 - 단순 이미지 뿐 아니라, 지도 확대하거나 위치 옮겨가는 등 인터랙티브한 활용 가능. 이를 활용할 수 있도록 거시적에서 미시적으로 진행되듯 스토리라인 잡고 시각화 적용하는 것이 좋음.
@@ -393,6 +411,97 @@ fig = plt.figure(FigureClass = Waffle, plots={111: {'values': df2['height_cm'], 
 &nbsp;&nbsp; 4\) 커넥션맵/링크맵: 지도에 찍힌 점들을 연결해서 지리적 관계 표시. 연속적 연결로 경로도 표시 가능. 연결선의 분포나 집중도로, 지리적 관계 패턴 파악에 사용.  
 - 이 외에도 플로우맵Flow, 카토그램, 지도 위에 바차트, 파이차트 등을 올려서 표현하는 법 등이 있다.
 ### 5.1. 공간 시각화 실습
+```python
+!pip install folium
+import folium
+form folium import Marker
+from folium import plugins
+from folium import GeoJson
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+
+# 서울 스타벅스 지점 데이터
+df = pd.read_csv("datasets/Starbucks_Seoul.csv")
+# 지역 구분을 위한 json 파일 불러오기
+geo= "Destop/datasets/Seoul_Gu.json"
+
+# 기본 지도 시각화(서울 위도, 경도 입력)
+m = folium.Map(location=[37.541, 126.986], zoom_start=12)    # zoom_start옵션으로 처음 화면에서 얼마나 확대할지
+m
+
+# 지도 형태 변경
+m = folium.Map(location=37.541, 126.986], tiles='Stamen Tone', zoom_start=12)
+
+# 원하는 좌표에 반경(radius)  표시(남산)
+folium.CircleMarker([37.5538, 126.9810], radius=50, popup='Laurelhurst Park', color = '#3246cc', fill_color='#3246cc'.add_to(m)
+# 원하는 좌표에 포인트 표시(남산)
+folium.Marker([37.5538, 126.9810], popup = 'The Waterfront').add_to(m)
+m
+
+# 지도의 옵션에는 Stamen Toner, Stamen Watercolor, Stamen Terrain, Cartodb Positron, Cartodb Dark_matter 등의 옵션이 있다.
+# CircleMarker()와 Marker() 함수로 남산 위치에 원 표시와 포인트 그림 삽입했다.
+
+# 서울 지도에 스타벅스 지점 수 시각화
+m = folium.Map([37.541, 126.986], zoom_start=12, width="%100", height="%100")
+locations = list(zip(df.latitude, df.longitude))
+cluster = plugins.MarkerCluster(locations=locations, popups=df["name"].tolist())     # 각 지역별 지점 수를 숫자로 표현해준다. 확대하면 숫자들이 쪼개지고, 축소하면 합쳐짐.
+m.add_child(cluster)
+m
+
+# 서울 지도에 도트맵 시각화
+m = folium.Map([37.541, 126.986], zoom_start=12, width="%100", height="%100")
+locations = list(zip(df.latitude, df.longitude))
+for i  in range(len(locations)):
+    folium.CircleMarker(location = locations[i], radius=1).add_to(m)
+m
+
+# 버블맵 시각화를 위한 데이터 가공
+# 구별지점 수 집계 및 중심점 산출
+df_m = df.groupby('gu_name').agg({'latitude':'mean', 'longitude':'mean', 'name':'count'}).reset_index()    # 구 이름 기준으로 위도와 경도의 평균을 한다.
+df_m.head()
+
+# 버블맵 시각화
+# 기본 지도 생성
+m = folium.Map(location = [37.541, 126.986], tiles='Cartodb Positron', zoom_start=11, width="%100", height="%100")
+# 구별 구분선, 생상 설정
+folium.Choropleth(geo_data=geo, fill_color="gray").add_to(m)    #geo_data는 앞에서 불러온 json 파일을 적용하는 것. 구별 경계선 설정.
+# 버블맵 삽입
+locations = list(zip(df_m.latitude, df_m.longitude))
+for i in range(len(locations)):
+    row = df_m.iloc[i]
+    folium.CircleMarker(locations = locations[i], radius=float(row.name/2), fill_color = "blue").add_to(m) # radius는 버블 크기 설정
+m
+```
+```python
+# 미국 실업률 정보의 코로플레스맵 시각화를 위한 데이터, json 불러오기.
+df2 = pd.read_csv("datasets/us_states_unemployment.csv")
+# 주별 경계 json 파일
+us_geo= 'datasets/folium_us-states.json'
+
+# 미국 지도 시각화
+m = folium.Map(location=[40, -98], zoom_stazrt=3, tiles="Cartodb Positron")
+# 지도에 주 경계선, 실업률 데이터 연동
+m.choropleth(geo_data=us_geo,     # json data
+                data = df2,         # 실업률 data
+                colums = ['Stat', 'Unemployment'],     # 연동할 칼럼 설정
+                key_on = 'feature.id',     # json과 실업률 데이터를 연결할 키값 설정
+                fill_color = 'YlGn', legend_name='실업률')
+m
+
+# 서울과 각국 수도 간 커넥션 맵 시각화
+# 서울, 도쿄, 워싱턴, 마닐라, 파리, 모스크바 위경도 입력
+source_to_dest = zip([37.541, 37.541, 37.541, 37.541, 37.541], [35.6804, 38.9072, 14.5995, 48.8566, 55.7558], [126.986, 126.986, 126.986, 126.986, 126.986], [139.7690, -77.0369, 120.9842, 2.3522, 37.6173])
+fig = go.Figure()
+
+## for 문으로 위경도 입력
+for a, b, c, d in source_to_dest:
+    fig.add_trace(go.Scattergeo(lat=[a, b], lon=[c, d], mode='lines', line=dict(width=1, color="red"), opacity = 0.5))    # opacity는 선 투명도
+fig.update_layout(margin={'t':0, 'b':0, 'l':0, 'r':0, 'pad':0}, showlegend=False, geo=dict(showcountries=True)) # showcountries 는 국가 경게선
+fig.show()
+```
 ### 6.0. 박스 플롯
 - 상자수염그림(Box and Whisker Plot)이라고도 불림. 네모 상자에 수염이 결합된 형태.
 - 하나의 그림으로 양적 척도 데이터 분포 및 편향성, 평균, 중앙값 등 다양한 수치 볼 수 있음.
