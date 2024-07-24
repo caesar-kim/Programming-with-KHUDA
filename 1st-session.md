@@ -209,6 +209,50 @@ df = df2.pivot(index='Tm', colums='Age', values='G')
 df2.head()
 
 # 히트맵 시각화 V2
+fig = plt.figure(figsize = (8, 8))
+fig.set_facecolor('white')
+plt.pcolor(df2.values)
+# 축 칼럼 설정
+plt.xticks(range(len(df2.columns)), df2.columns)
+plt.yticks(range(len(df2.index)), df2.index)
+# 축 레이블 설정
+plt.xlabel('Age', fontsize=14)
+plt.ylabel('Team', fontsize=14)
+plt.colorbar()
+plt.show()
+
+# 방사형 차트 - 하나씩 시각화
+labels = df3.column[1:]
+num_labels = len(labels)
+# 등분점 생성
+angles = [x/float(num_labels)*(2*pi) for x in range(num_labels)]
+angles += angles[:1] # 시작점 생성
+my_palette = plt.cm.get_cmap("Set2", len(df3.index))
+fig = plt.figure(figsize= (15, 20))
+fig.set_facecolor('white')
+
+for i, row in df3.iterrows():
+        color = my_palette(i)
+        data = df3.iloc[i].drop('Tm').tolist()
+        data += data[:1]
+        ax = plt.subplot(3, 2, i+1, ploar=True)
+        ax.set_theta_offset(pi / 2) # 시작점 설정
+        ax.set_theta_direction(-1) # 시계방향 설정
+
+        # 각도 축 눈금 생성
+        plt.xticks(angles[:-1], labels, fontsize=13)
+        # 각 축과 눈금 사이 여백 생성
+        ax.tick_params(axis='x', which='major', pad=15)
+        # 반지름 축 눈금 라벨 각도 0으로 설정
+        ax.set_rlabel_position(0)
+        # 반지름 축 눈금 설정
+        plt.yticks([0, 5, 10, 15, 20], ['0', '5', '10', '15', '20'], fontsize=10)
+        plt.ylim(0,20)
+        ax.plot(angles, data, color=color, linewidth=2, linestyle='solid')        # 방사형 차트 출력
+        ax.fill(angels, data, color=color, alpha=0.4)        # 도형 안쪽 색상 설정
+        plt.title(row.Tm, size=20, color=color, x=-0.2, y=1.2, ha='left')        # 각 차트의 제목 생성
+plt.tight_layout(pad=3)        # 차트 간 간격 설정
+plt.show()
 ```
 ### 3.0. 분포 시각화
 - 데이터가 처음 주어졌을 때 어떤 요소가 어떤 비율인지 확인 하는 매우 중요한 단계에서도 많이 사용됨.
