@@ -134,6 +134,7 @@ index = np.arange(49)
 np.random.shuffle(index)
 # 랜덤하게 섞인 인덱스를 활용해 나눈다.
 # 넘파이 에서는 배열 인덱싱 기능 제공. 여러 개 인덱스로 한 번에 선택 가능. 또한 배열도 인덱스로 전환 가능.
+# shuffle은 다차원 배열일 경우 첫 번째 축(행)에 대해서만 섞는다.
 train_input = input_arr[index[:35]]
 train_target = target_arr[index[:35]]
 test_input = input_arr[index[35:]]
