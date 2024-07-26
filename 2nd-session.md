@@ -88,9 +88,71 @@ kn.predict([[30. 600]])
     - 기본 값은 5이다. 5개의 주변 데이터로 참고. 이를 변경할 수도 있다.
 ## 2-1. 훈련 세트와 테스트 세트
 - 지도 학습과 비지도 학습
+    - 지도학습supervised learning과 비지도학습unsupervised learning으로 나뉜다.
+    - 지도학습 알고리즘을 훈련하려면 데이터와 정답이 필요하다. 데이터는 입력input, 정답은 타깃target이라고 하고 둘을 합쳐 훈련 데이터training data라고 하낟.
+    - 비지도학습 알고리즘은 타깃 없이 입력 데이터만 사용. 정답이 없으므로 무언가 맞힐 수 없다. 대신 데이터 파악이나 변형에 도움을 준다.
+    - 이 외에도 강화학습 알고리즘reinforcement learning이 있다. 알고리즘이 행동한 결과로 얻은 보상을 사용해 학습한다.
 - 훈련 세트와 테스트 세트
+    - 데이터와 타깃을 주고 훈련한 다음 같은 데이터로 테스트하면 맞히는 것이 당연하다.
+    - 평가를 위해 또 다른 데이터를 준비하거나 이미 준비된 데이터 중에서 일부 떼어내어 활용하는 방법. 일반적으로 후자를 사용.
+    - 훈련에 사용하는 것이 train set, 평가에 사용하는 것이 테스트 세트test set이다.
+```python
+# 생선 길이와 무게를 하나의 리스트로 담은 2차원 리스트 만들기.
+fish_data = [[l, w] for l, w in zip(fish_length, fish_weight)]
+fish_target = [1]*35 + [0]*14
+
+from sklearn.neighbors import KNeighborsClassifier
+kn = KNeighborsClassifier()
+# 이제 전체 데이터에서 처음 35개를 선택해야 한다. index와 slicing 사용.
+train_input = fish_data[:35]
+train_target = fish_target[:35]
+test_input = fish_data[35:]
+test_target = fish_target[35:]
+
+kn = kn.fit(train_input, train_target)
+kn.score(test_input, test_target)
+# 정확도가 0이 나왔다.
+```
 - 샘플링 편향
+     - 테스트 셋과 훈련 셋의 데이터가 골고루 섞여있어야 한다. 그렇지 않으면 sampling bias라고 한다.
+     - 나누기 전에 데이터를 섞든지, 아니면 골고루 추출해야 한다.
 - 넘파이
+    - 파이썬의 배열array 라이브러리이다. 고차원 리스트를 만들고, 조작할 수 있는 도구들 제공.
+```python
+import numpy as np
+input_arr = np.array(fish_data)
+target_arr = np.array(fish_target)
+# 넘파이는 배열 차원 구분 쉽도록 행과 열을 가지런히 출력한다.
+# shape은 배열의 크기를 알려준다. (샘플 수, 특성 수)로 출력.
+print(input_arr.shape)
+# 여기서는 배열에서 무작위로 샘플을 고를 것. input_arr의 행과 target_arr의 행이 같이 움직여야 한다. 따라서 구분지을 인덱스 값을 잘 기억해두어야 함.
+# arrange() 함수는 0부터 1씩 증가하는 인덱스를 만들 수 있다. 그 후 랜덤하게 섞는다.
+# 넘파이에서 무작위 함수들은 실행 시마다 다른 결과를 만든다. 일정한 결과를 얻으려면 초기에 랜덤 시드를 지정하면 된다.
+# 이 초깃값이 같으면 동일한 난수를 뽑을 수 있다.
+np.random.seed(42)
+index = np.arange(49)
+np.random.shuffle(index)
+# 랜덤하게 섞인 인덱스를 활용해 나눈다.
+# 넘파이 에서는 배열 인덱싱 기능 제공. 여러 개 인덱스로 한 번에 선택 가능. 또한 배열도 인덱스로 전환 가능.
+train_input = input_arr[index[:35]]
+train_target = target_arr[index[:35]]
+test_input = input_arr[index[35:]]
+test_target = target_arr[index[35:]]
+# 잘 섞여 있는지 산점도를 통해 확인
+import matplotlib.pyplot as plt
+plt.scatter(train_input[:,0], train_input[:,1])
+plt.scatter(test_input[:,0], test_input[:,1])
+plt.xlabel('length')
+plt.ylabel('weight')
+plt.show()
+```
+- 두번째 머신러닝 프로그램
+```python
+# fit() 메소드를 실행할 때마다 KNeighborsClassifier 클래스 객체는 이전에 학습한 것을 잃어버린다. 이전 모델 그대로 두고 싶다면
+# KNeighborsClassifier 클래스 객체를 새로 만들어야 한다.
+kn = kn.fit(train_input, train_target)
+kn.score(test_input, test_target)
+# 코랩은 각 셀에서 마지막 코드 결과를 자동으로 출력하기 때문에 print()함수 사용하지 않아도 된다.
 ## 2-2. 데이터 전처리
 - 넘파이로 데이터 준비하기
 - 수상한 도미 한 마리
