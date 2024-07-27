@@ -226,7 +226,17 @@ train_scaled = (train_input - mean) / std
 # 넘파이는 모든 행에서 mean의 값들을 다 빼준다. 브로드캐스팅broadcasting 기능.
 ```
 - 전처리 데이터로 모델 훈련하기
-
+    - 이 데이터로 다시 산점도를 그리니, 수상한 샘플 하나만 덩그러니 떨어져 있다.
+    - 훈련 세트를 평균으로 빼고 std로 나눠져서 값의 범위가 달라졌기 때문. 샘플도 동일한 작업을 해줘야 한다.
+    - 이 작업은 동일하게 훈련세트의 mean, std를 이용해야 함.
+```python
+new = ([25, 150] - mean) / std
+kn.fit(train_scaled, train_target)
+# 테스트 세트도 마찬가지로 훈련 세트의 mean, std로 변환해야 한다.
+test_scaled = (test_input - mean) / std
+kn.score(test_scaled, test_target)
+print(kn.predict([new]))
+```
 
 
 
