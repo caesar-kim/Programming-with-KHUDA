@@ -154,7 +154,25 @@ plt.show()
 kn = kn.fit(train_input, train_target)
 kn.score(test_input, test_target)
 # 코랩은 각 셀에서 마지막 코드 결과를 자동으로 출력하기 때문에 print()함수 사용하지 않아도 된다.
+```
 ## 2-2. 데이터 전처리
 - 넘파이로 데이터 준비하기
+```python
+# 이전에는 파이썬 리스트를 순회하며 하나씩 꺼내서 리스트 내 리스트로 직접 구성. 넘파이로 더 쉽게 가능.
+import numpy as np
+# 리스트를 일렬로 세우고 차례대로 나란히 연결.
+fish_data = np.column_stack((fish_length, fish_weight))
+# 넘파이 배열을 출력하면 리스트처럼 한 줄로 길게 나오지 않고 행렬이 맞춰져서 가지런히 나옴.
+# 원하는 개수만큼 1이나 0을 채우는 np.ones(), np.zeros() 함수도 있다.
+# stack말고 첫 번째 차원 따라서 배열하는 np.concatenate() 함수 사용할 것.
+fish_target = np.concatenate((np.ones(35), np.zeros(14))
+```
+- 사이킷런으로 훈련 셋과 테스트 셋 나누기
+- 
 - 수상한 도미 한 마리
 - 전처리 데이터로 모델 훈련하기
+
+
+
+
+
