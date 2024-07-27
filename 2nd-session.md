@@ -168,8 +168,63 @@ fish_data = np.column_stack((fish_length, fish_weight))
 fish_target = np.concatenate((np.ones(35), np.zeros(14))
 ```
 - 사이킷런으로 훈련 셋과 테스트 셋 나누기
-- 
+```python
+# train_test_split() 함수는 전달되는 리스트/배열을 비율에 맞게 나눠준다. 나눠주기 전에 섞어준다.
+from sklearn.model_selection import train_test_split
+train_input, test_input, train_target, test_target = train_test_split(fish_data, fish_target, random_state=42)
+# 기본적으로는 25%를 테스트 세트로 떼어낸다.
+# 그러나 클래스 개수가 적은 지금 같은 경우, 샘플링 편향이 나타났다. 이를 해결 가능.
+train_input, test_input, train_target, test_target = train_test_split(fish_data, fish_target, stratify=fish_target, random_state=42)
+```
 - 수상한 도미 한 마리
+```python
+# 새로 준비한 데이터로 K-최근접 이웃 훈련.
+from sklearn.neighbors import KNeighborClassifier
+kn = KNeighborsClassifier()
+kn.fit(train_input, train_target)
+kn.score(test_input, test_target)
+# 팀장이 준 빙어를 넣어봄.
+print(kn.predict([[25, 150]]))
+# 도미인데 빙어라고 나왔다. 왜 그런지 산점도로 확인해본다.
+import matplotlib.pyplot as plt
+plt.scatter(train_input[:,0], train_input[:, 1])
+plt.scatter(25, 150, marker='^') #marker은 매개변수 모양을 지정한다.
+plt.xlabel('length')
+plt.ylabel('weight')
+plt.show()
+
+# 이 방법은 가장 가까운 5개 이웃의 클래스로 확인한다.
+distances, indexes = kn.kneighbors([[25, 150]])
+plt.scatter(train_input[:,0], train_input[:,1])
+plt.scatter(25, 150, marker='^')
+plt.scatter(train_input[indexes, 0], train_input[indexes,1], marker='D') # D는 산점도로 마름모로 나옴.
+plt.xlabel('length')
+plt.ylabel('weight')
+
+```
+- 기준을 맞춰라
+    - x축과 y축의 범위가 달라서 생긴 문제.
+```python
+# 범위를 x, y 축 동일하게 0~1000으로 맞추기
+plt.scatter(train_input[:,0], train_input[:,1])
+plt.scatter(25, 150, marker='^')
+plt.scatter(train_input[indexes, 0], train_input[indexes,1], marker='D')
+plt.xlim((0,1000))
+plt.xlabel('length')
+plt.ylabel('weight')
+plt.show()
+# 산점도가 거의 일직선으로 나타난다. 두 특성의 값이 놓인 범위가 너무 다르다. scale이 다른 것.
+# 기준이 다르면 특히 거리 기반 알고리즘에서는 올바르게 예측하기 힘들다.
+# 이러한 특성값을 일정한 기준으로 맞추는 것이 데이터 전처리data preprocessing
+
+# 가장 널리 사용하는 전처리 방법 중 하나는 표준점수standard score(혹은 z 점수)
+# 특성값이 0에서 표준편차 몇 배 만큼 떨어져 있는지.
+mean = np.mean(train_input, axis=0)
+std = np.std(train_input, axis=0) # 특성마닥 값의 스케일이 다르므로, 평균/표준편차는 각 특성 별 계산해야 한다. 그래서 axis=0으로.
+# 표준점수 변환
+train_scaled = (train_input - mean) / std
+# 넘파이는 모든 행에서 mean의 값들을 다 빼준다. 브로드캐스팅broadcasting 기능.
+```
 - 전처리 데이터로 모델 훈련하기
 
 
