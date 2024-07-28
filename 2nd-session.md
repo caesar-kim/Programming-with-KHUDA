@@ -237,7 +237,16 @@ test_scaled = (test_input - mean) / std
 kn.score(test_scaled, test_target)
 print(kn.predict([new]))
 ```
-
+    - 특성을 표준 점수로 바꾼 후의 K-최근접 이웃 알고리즘의 산점도.
+```python
+distances, indexes = kn.kneighbors([new])
+plt.scatter(train_scaled[:,0], train_scaled[:,1])
+plt.scatter(new[0], new[1], marker='^')
+plt.scatter(train_scaled[indexes,0], train_scaled[indexes,1], marker='D')
+plt.xlabel('length')
+plt.ylabel('weight')
+plt.show()
+```
 
 
 
