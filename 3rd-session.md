@@ -15,6 +15,18 @@ perch_length = np.array(
     24.6, 25.0, 25.6, 26.5, 27.3, 27.5, 27.5, 27.5, 28.0, 28.7, 30.0, 32.8, 34.5, 35.0, 36.5, 36.0, 37.0, 37.0, 39.0, 39.0, 39.0, 40.0, 40.0, 40.0, 40.0, 42.0, 43.0,
     43.0, 43.5, 44.0]
     )
+
+# 데이터 형태를 보기 위한 산점도 그리기
+import matplotlib.pyplot as plt
+plt.scatter(perch_length, perch_weight)
+plt.xlabel('length')
+plt.ylabel('weight')
+plt.show()
+
+# 훈련 세트와 테스트 세트 나누기
+from sklearn.model_selection import train_test_split
+train_input, test_input, train_target, test_target = train_test_split(perch_length, perch_weight, random_state=42)
+
 ```
 ### 데이터 준비(p.116)
 ### 결정계수 Rsquare(p.120)
