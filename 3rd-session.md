@@ -196,6 +196,29 @@ test_poly = np.column_stack((test_input ** 2, test_input))
 
 print(trian_poly.shape, test_poly.shape)  # 결과: (42, 2) (14, 2)
 # 테스트셋 훈련셋 모두 열이 2개로 늘어났다.
+# 훈련셋의 항은 늘어났지만, 타깃항은 그대로다. 타깃항은 어떤 것으로 훈련하든 바꿀 필요가 없다.
+
+lr = LinearRegression()
+lr.fit(train_poly, train_target)
+print(lr.predict([[50**2, 50]]))  # 결과 1573.98
+
+print(lr.coef_, lr.intercept_)  # [1.01, -21.56] 116.05
+# 이렇게 다항식을 사용한 선형회귀를 다항회귀라 한다.
+
+# 구간별로 직선을 그려서 곡선처럼 표현할 것.
+# 15에서 49까지의 정수 배열을 만든다.
+point = np.arrange(15, 50)
+plt.scatter(train_input, train_target)  # 훈련셋의 산점도 그리기
+plt.plot(point, 1.01*point**2 - 21.6*point + 116.05)
+
+# 50cm 농어 데이터
+plt.scatter([50], [1574], marker='^')
+plt.show()
+
+# R^2 점수 확인
+print(lr.score(trian_poly, train_target))  # 0.970
+print(lr.score(test_poly, test_target))  # 0.977
+```
 ## 3-3. 특성 공학과 규제(p.150)
 ### 다중 회귀(p.151)
 ### 데이터 준비(p.152)
