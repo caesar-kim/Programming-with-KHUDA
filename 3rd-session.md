@@ -352,3 +352,66 @@ print(ridge.score(train_scaled, train_target))  # 0.9903
 print(ridge.score(test_scaled, test_target))  # 0.9827
 ```
 ### 라쏘 회귀(p.163)
+- ridge에서 했던 것을 Lasso 클래스로만 바꾸면 된다.
+```python
+from sklearn.linear_model import Lasso
+lasso = Lasso()
+lasso.fit(train_scaled, train_target))  # 0.9897
+print(lasso.score(test_scaled, test_target))  # 0.9800
+
+# 최적의 alpha를 구해보기
+train_score = []
+test_score = []
+alpha_list = [0.001, 0.01, 0.1, 1, 10, 100]
+for alpha in alpha_list:
+  lasso = Lasso(alpha=alpha, max_iter=10000)  # 라쏘 모델 만들기
+  lasso.fit(train_scaled, train_target)  # 라쏘 모델 훈련하기
+  train_score.append(lasso.score(train_scaled, train_target))
+  test_score.append(lasso.score(test_scaled, test_target))
+# 라쏘 모델 훈련 시 ConvergenceWarning 이라는 경고가 발생 가능. 최적 계수 찾기 위한 반복 계산을 하는데, 지정한 반복횟수가 부족할 때 발생하는 경고.
+# max_iter의 매개변수 값을 필요 시 더 늘리면 된다.
+
+plt.plot(np.log10(alpha_list, train_score)
+plt.plot(np.log10(alpha_list), test_score)
+plt.show()  # 그래프 출력 결과 최적 값은 1로 보인다.
+
+lasso = Lasso(alpha = 10)
+lasso.fit(train_scaled, train_target)
+print(lasso.score(train_scaled, train_target))  # 0.9888
+print(lasso.score(test_scaled, test_target))  # 0.9824
+
+# 라쏘 모델 계수는 coef_ 속성에 저장되어 있다. 라쏘 모델은 계수를 아예 0으로 만들 수도 있었는데 그 부분을 살펴볼 것.
+print(np.sum(lasso_coef_ == 0))  # np.sum은 배열을 모두 더한 값을 반환한다.
+# == 같은 비교연산자 사용하면 각 원소가 True, False로 판단된다. 0인 것이 True가 되어 그 개수를 세는 것.
+# 결과: 40
+# 55개의 특성을 주입했지만, 40개는 0이었고, 사용한 특성은 15개에 불과하다.
+# 이러한 특징을 이용하여 라쏘 모델을 유용한 특성을 골라내는데 사용하는 것도 가능하다.
+```
+
+- pandas에서 read_csv()는 csv 파일을 읽어 판다스 dataframe으로 변환하는 함수이다.
+  - sep은 파일 구분자를 지정. 기본값은 콤마(,)이다.
+  - header은 열 이름으로 사용할 csv 파일 내의 행 번호를 지정한다. 기본은 첫 번째 행.
+  - skiprows는 파일 읽기 전 건너뛸 행의 개수 지정.
+  - nrows는 파일에서 읽을 행의 개수를 지정한다.
+- scikit-learn
+  - PolynomialFeatures는 주어진 특성 조합하여 새로운 특성을 만든다.
+    - degree는 최고 차수 지정. 기본값은 2.
+    - interaction_only가 True이면 거듭제곱항은 제외되고 곱셈 항만 추가된다. 기본 값은 False이다.
+    - include_bias가 False이면, 절편을 위한 특성을 추가하지 않는다. 기본 값은 True이다.
+  - Ridge
+    - alpha 매개변수로 규제 강도 조절. 1이 기본값이고 클수록 규제가 세진다.
+    - solver 매개변수에 최적 모델 찾는 방법 지정 가능. 기본 값은 auto이며 데이터에 따라 자동 선택된다.
+      - 0.17버전의 sag는 확률적 평균경사하강법 알고리즘으로 특성과 샘플 수 많을 때 성능이 좋다.
+      - 0.19버전에 saga로 더 개선된 버전 추가됨.
+    - random_state는 solver가 sag, saga일 때 numpy 난수 시드값을 지정할 수 있다.
+  - Lasso
+    - 좌표축을 따라 최적화 수행하는 좌표하강법coordinate descent 방법 사용.
+    - alpha와 random_state는 Ridge클래스와 사용방법 동일.
+    - max_iter는 알고리즘 수행 반복 횟수 지정. 기본값은 1000 이다.
+
+
+
+
+
+
+
