@@ -275,7 +275,80 @@ poly.get_feature_names()  # 결과 [x0, x1, x2, x0^2 , ...) x0은 특성1, x0^2�
 test_poly = poly.transform(test_input)  # PolynomialFeatures 클래스는 따로 변환해도 되지만, 훈련셋에 적용한 변환기로 테스트셋을 변환하는 것이 좋다.
 ```
 ### 다중 회귀 모델 훈련하기(p.156)
+- 훈련하는 법은 같다. 다만 특성을 여러 개 사용하는 것 뿐.
+```python
+from sklearn.linear_model import LinearRegression
+lr = LinearRegression()
+lr.fit(train_poly, train_target)
+print(lr.score(train_poly, train_target))  # 0.9903  특성이 늘어나니 점수가 더 높아졌다.
+print(lr.score(test_poly, test_target))  # 0.9714
 
-### 규제(p.158)
+# degree 매개변수를 통해 고차항의 최대 차수를 정할 수 있다. 5제곱으로 설정해본다.
+poly = PolynomialFeatures(degree = 5, include_bias=False)
+poly.fit(train_input)
+train_poly = poly.transform(train_input)
+test_poly = poly.transform(test_input)
+print(train_poly.shape)  # (42, 55) 55개의 특성
+
+lr.fit(train_poly, train_target)
+print(lr.score(train_poly, train_target))  # 0.9999
+
+print(lr.score(test_poly, test_target))  # -144.4057
+# 특성의 개수를 크게 늘렸더니 훈련셋에는 거의 완벽하지만 테스트셋에서는 형편없는 점수. 과대적합 되었다.
+# 샘플 개수가 42개 밖에 안 되니 55개 특성으로 완벽하게 맞출 수 있는 것.
+```
+### 규제regularization(p.158)
+- 너무 과도하게 학습하지 못하도록 훼방하는 것. 과대적합하지 않도록.
+- 선형회귀 모형에서는 특성에 곱해지는 계수(또는 기울기) 크기를 작게 만드는 것.
+- 특성 스케일이 정규화되지 않으면 여기에 곱해지는 계수도 차이 나게 된다. 이번에는 StandardScaler 클래스 사용할 것.
+```python
+from sklearn.preprocessing import StandardSclaer
+ss = StandardScaler()  # ss객체를 초기화한 후 fit으로 훈련. 훈련셋으로 학습한 변환기로 테스트셋까지 변환해야 함.
+ss.fit(train_poly)  # 학습한 평균과 표준편차는 StandardScaler 클래스 객체의 mean_, scale_ 속성에 저장된다.
+train_scaled = ss.transform(train_poly)
+test_scaled = ss.transform(test_poly)
+```
+- 규제를 추가한 모델을 릿지ridge, 라쏘lasso라고 부른다. 두 모델은 규제를 가하는 방법이 다르다.
+- 릿지는 계수를 제곱한 값을 기준으로 규제를 적용하고, (일반적으로 릿지를 더 선호하는 편이다)
+- 라쏘는 계수의 절댓값을 기준으로 규제를 적용한다.
+- 두 알고리즘 모두 계수의 크기를 줄이지만, 라쏘는 아예 0으로까지 만들 수도 있다. 사이킷런으로 두 알고리즘 적용 가능.
+- sklearn.linear_model 패키지 안에서 두 규제를 다 사용 가능.
+
 ### 릿지 회귀(p.160)
+```python
+from sklearn.linear_model import Ridge
+ridge = Ridge()
+ridge.fit(train_scaled, train_target)
+print(ridge.score(train_scaled, train_target))  # 0.9896
+print(ridge.score(test_scaled, test_target))  # 0.9790
+```
+- 특성 수는 확실히 많아졌지만, 과대적합된 문제는 해결되었다.
+- 규제의 양도 임의로 조절 가능하다.
+  - 모델 객체 만들 때 alpha 매개변수로 규제의 강도를 조절.
+  - alpha가 크면 규제 강도가 더 세져서 계수값을 줄여 조금 더 과소적합되도록 유도한다.
+  - alpha는 릿지 모델이 학습하는 것이 아닌 우리가 사전에 지정해줘야 하는 값. 머신러닝이 할 학습 못하고 사람이 알려줘야 하는 파라미터를 하이퍼파라미터hyperparameter라고 함.
+  - 이런 하이퍼파라미터는 사이컷런 같은 머신러닝 라이브러리에서 클래스와 메소드의 매개변수로 표현된다.
+- 적절한 알파는 알파에 대한 R^2 값 그래프를 그려보는 것. 훈련셋과 테스트셋 점수가 가장 가까운 지점이 최적의 알파값이다.
+```python
+import matplotlib.pyplot as plt
+train_score = []
+test_score = []
+
+alpha_list = [0.001, 0.01, 0.1, 1, 10, 100]
+for alpha in alpha_list:
+  ridge = Ridge(alpha=alpha)  # 릿지 모델 만들기
+  ridge.fit(train_scaled, train_target)  # 릿지 모델 훈련
+  train_score.append(ridge.score(train_scaled, train_target))
+  test_score.append(ridge.score(test_scaled, test_target))  # 점수 저장
+
+# 알파 값을 10배씩 늘렸기 때문에 그래프로 나타내기 위해 로그로 바꾸어 표현한다. np.log()는 밑이 e인 자연로그, np.log10()은 10이 밑인 상용로그.
+plt.plot(np.log10(alpha_list), train_score)
+plt.plot(np.log10(alpha_list), test_score)
+plt.show()  # 가장 적절한 지점은 0.1로 판단되었다.
+
+ridge = Ridge(alpha=0.1)
+ridge.fit(train_scaled, train_target)
+print(ridge.score(train_scaled, train_target))  # 0.9903
+print(ridge.score(test_scaled, test_target))  # 0.9827
+```
 ### 라쏘 회귀(p.163)
