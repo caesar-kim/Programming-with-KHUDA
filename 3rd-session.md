@@ -221,9 +221,61 @@ print(lr.score(test_poly, test_target))  # 0.977
 ```
 ## 3-3. 특성 공학과 규제(p.150)
 ### 다중 회귀(p.151)
+- 여러 개의 특성을 사용한 선형회귀를 다중회귀multiple regression이라고 한다.
+- 특성이 2개면 평면을 학습한다.
+  - 고차원에서는 선형회귀가 복잡한 모델을 표현할 수 있다.
+- 각각의 특성과 그것의 제곱들을 포함하고, 거기에 특성 두 개를 곱해서 새로운 특성도 만든다. 이것을 특성공학feature engineering이라 한다.
 ### 데이터 준비(p.152)
+- 판다스pandas는 데이터 분석 라이브러리.
+- 데이터프레임dataframe은 판다스의 핵심 데이터 구조. 다차원 배열 다룰 때 넘파이보다 더 많은 기능 제공.
+```python
+import pandas as pd  # pd는 관례적으로 사용하는 pandas의 별칭
+df = pd.read_csv('https://bit.ly/perch_csv')
+perch_full = df.to_numpy()
+print(perch_full)
+
+import numpy as np
+perch_weight = np.array([5.9, 32.0, 40.0, 51.5, 70.0, 100.0, 78.0, 80.0, 85.0, 85.0, 110.0,
+       115.0, 125.0, 130.0, 120.0, 120.0, 130.0, 135.0, 110.0, 130.0,
+       150.0, 145.0, 150.0, 170.0, 225.0, 145.0, 188.0, 180.0, 197.0,
+       218.0, 300.0, 260.0, 265.0, 250.0, 250.0, 300.0, 320.0, 514.0,
+       556.0, 840.0, 685.0, 700.0, 700.0, 690.0, 900.0, 650.0, 820.0,
+       850.0, 900.0, 1015.0, 820.0, 1100.0, 1000.0, 1100.0, 1000.0,
+       1000.0])
+
+# perch_full과 perch_weight를 훈련셋과 테스트셋으로 나눔.
+from sklearn.model_selection import train_test_split
+train_input, test_input, train_target, test_target = train_test_split(perch_full, perch_weight, random_state=42)
+```
 ### 사이킷런의 변환기(p.154)
+- 사이킷런은 특성 만들거나 전처리 하기 위한 다양한 클래스 제공.
+- 이러한 클래스를 변환기transformer라고 한다.
+```python
+from sklearn.preprocessing import PolynomialFeatures
+poly = PolynomialFeatures()
+poly.fit([[2, 3]])  # 훈련을 먼저 해야 변환이 가능하다. fit() 메소드로 새롭게 만들 특성 조합을 찾고
+print(poly.transform([[2, 3]]))  # transform 매소드로 실제 데이터를 변환한다. fit메소드에는 타겟데이터 없이 입력데이터만 전달했다.
+# 결과 [[1. 2. 3. 4. 6. 9.]]
+# 1 2 3과 각각 제곱한 4 9가 추가되고 2X3인 6이 추가되어 6개가 되었다.
+# 1은 절편에 항상 곱하는 계수이다. 하지만 사이킷런에서는 자동으로 절편을 추가하기 때문에 이를 제거하여 다시 특성을 변환한다.
+poly = PolynomialFeatures(include_bias=False)  # 지정하지 않아도 알아서 절편항을 무시해서 꼭 하진 않아도 됨.
+poly.fit([[2, 3]])
+print(poly.transform([[2, 3]]))
+
+# 이 방식을 실제 데이터에 적용
+poly = PolynomialFeatures(include_bias = False)
+poly.fit(train_input)
+train_poly = poly.transform(train_input)
+print(train_poly.shape)  # 결과 (42, 9) 9개의 특성이 있다.
+
+# 어떤 조합의 특성인지 보는 법
+poly.get_feature_names()  # 결과 [x0, x1, x2, x0^2 , ...) x0은 특성1, x0^2는 특성1의 제곱, x0 x1은 특성1과 2의 곱  이다.
+
+ # 변환된 특성으로 다중회귀 모델 훈련
+test_poly = poly.transform(test_input)  # PolynomialFeatures 클래스는 따로 변환해도 되지만, 훈련셋에 적용한 변환기로 테스트셋을 변환하는 것이 좋다.
+```
 ### 다중 회귀 모델 훈련하기(p.156)
+
 ### 규제(p.158)
 ### 릿지 회귀(p.160)
 ### 라쏘 회귀(p.163)
