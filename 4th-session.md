@@ -62,6 +62,35 @@ print(train_target[indexes])  # Roach, Perch, Perch
 ```
 - 분류에서 성공했지만 3개의 이웃만 썼기에 확률은 0, 0.33, 0.67, 1 4가지 뿐일 것. 더 좋은 방법을 찾아야 한다.
 ### 로지스틱 회귀logistic regression(p.183)
+- 로지스틱회귀logistic regression은 이름은 회귀이지만 분류이다. 선형회귀와 동일하게 선형 방정식을 학습한다.
+- 다중회귀할 때 쓰는 방정식과 동일하다. z = a X (weight) + b X (length) + .... + f
+- z는 어떤 값이든 들어갈 수 있지만, 확률로 표현하려면 0~1 사이의 값을 가져야 한다.
+- 이 때 시그모이드 함수sigmoid function 또는 로지스틱 함수 logistic function을 사용하면 가능하다.
+  - 시그모이드 함수는 phi = 1 / ( 1 + e^(-z) )
+  - z가 -무한이면 0에 가까워지고, +무한이면 1에 가까워진다. z가 0이면 0.5가 된다. 절대 0~1 사이를 벗어나지 못한다.
+```python
+# 넘파이를 사용하여 로지스틱 그래프 그리기
+import numpy as np
+import matplotlib.pyplot as plt
+z = np.arange(-5, 5, 0.1)
+phi = 1 / (1 + np.exp(-z))
+plt.plot(z, phi)
+plt.show()
+```
+- 사이킷런에는 로지스틱 회귀 모델인 LogisticRegression 클래스가 있다.
+  - 먼저 이진분류부터 수행해본다. 0.5보다 크면 1(양성 클래스), 작으면 0(음성 클래스)로 판단. 정확히 0.5인 경우 라이브러리마다 다를 수 있지만 사이킷런은 음성으로 판단.
+- 넘파이 배열은 True, False 값을 전달하여 행 선택 가능. 이를 불리언 인덱싱boolean indexing이라고 한다.
+```python
+# 배열에서 A와 C만 골라내려면 1번 3번 원소만 True라고 하는 배열을 전달하면 된다.
+char_arr = np.array(['A', 'B', 'C', 'D', 'E'])
+print(char_arr[[True, False, True, False, False]])
+
+# 비교연산자를 통해 도미Bream과 빙어Smelt의 행을 True로 만든다.
+# 비트 OR 연산자 | 를 통해 골라낸다.
+bream_smelt_indexes = (train_target == 'Bream') | (train_target == 'Smelt')
+train_bream_smelt = train_scaled[bream_smelt_indexes]
+target_bream_smelt = train_target[bream_smelt_indexes]
+```
 
 ## 4-2. 확률적 경사 하강법(p.199)
 ### 점진적인 학습(p.200)
