@@ -198,7 +198,7 @@ print(np.round(proba, decimals=3))
 - 훈련 세트에서 랜덤하게 하나의 샘플을 선택해 가파른 경사를 조금 내려간다. 그 다음 훈련 셋에서 랜덤하게 또 다른 샘플 골라서 내려간다.
   - 이런 식으로 모든 샘플 사용할 때까지 반복한다.
   - 이렇게 해도 산을 다 내려오지 못했다면? 다시 처음부터 하면 된다.
-  - 이 한 과정을 에포크 epoch라고 한다. 일반저긍로 수십 수백번 이상 수행하게 된다.
+  - 이 한 과정을 에포크 epoch라고 한다. 일반적으로 수십 수백번 이상 수행하게 된다.
 - 무작위 선택이 무책임해 보여도 꽤 잘 작동한다. 그래도 걱정이 되면 1개 말고 몇 개 씩 선택해서 내려가는 방법도 가능하다.
   - 이를 미니배치 경사 하강법minibatch gradient descent라고 한다.
 - 극단적으로는 한 번에 모든 샘플을 사용할 수도 있다. 이를 배치 경사 하강법batch gradient descent라고 한다.
@@ -224,6 +224,111 @@ print(np.round(proba, decimals=3))
     - 실제와 맞은 1과 3은 -0.9와 -0.8로 손실이 낮고, 못 맞춘 2와 4는 손실이 높다.
     - 이런 방식으로 계산하면 연속적인 손실 함수 얻을 수 있다.
     - 여기에 예측 확률에 로그함수를 적용하면 더 좋다. 확률의 범위는 0~1 사이이고, 로그는 이 범위에서 음수가 되므로,
-    - 최종 손실 값은 양수로 바뀌기 때문이다.
+    - 최종 손실 값은 양수로 바뀌기 때문이다. 양수면 이해하기 더 쉬울 것.
+    - 또한 로그함수는 0에 가까울수록 아주 큰 음수가 되기 때문에 손실을 아주 크게 만들어 모델에 큰 영향을 미치게 할 수 있다.
+    - 이 손실함수를 로지스틱 손실함수 또는 이진 크로스엔트로피 손실함수 라고도 부른다.(이 손실 함수를 사용하면 로지스틱 회귀 모델이 만들어지기 때문)
+    - 다중분류에서 사용하는 손실함수는 크로스엔트로피 손실함수라고 한다.
+    - 손실함수들은 거의 다 만들어져 있어서 우리가 개발하는 일은 잘 없다.
+    - 분류 말고 회귀에서는 평균 절댓값 오차MAE나 평균 제곱 오차 MSE를 많이 사용한다.
 ### SGD Classifier(p.207)
+```python
+import pandas as pd
+fish = pd.read_csv('https://bit.ly/fish_csv')
+# 데이터를 불러와서 species열 제외한 5개 열은 입력 데이터로 사용. 수산물 종에 대한 열은  타깃 데이터이다.
+fish_input = fish[['Weight', 'Lengh', 'Diagonal', 'Height', 'Width']].to_numpy()
+fish_target = fish['Species'].to_numpy()
+
+# 테스트셋 훈련셋 나누기
+from sklearn.model_selection import train_test_split
+train_input, test_input, train_target, test_target = train_test_split(fish_input, fish_target, randomstate=42)
+
+# 전처리 하기
+from sklearn.preprocessing import StandardScaler
+ss = StandardScaler()
+ss.fit(train_input)
+train_scaled = ss.transform(train_input)
+test_scaled = ss.transform(test_input)
+
+# 확률적 경사 하강법 제공하는 분류용 클래스
+from sklearn.linear_model import SGDClassifier
+
+# 객체 만들 때 2개의 매개변수를 지정한다. loss는 손실함수 종류 지정. log라고 하여 로지스틱 손실함수 지정.
+# max_iter는 수행할 에포크 수 지정. 10으로 지정하여 10회 반복.
+sc = SGDClassifier(loss='log', max_iter=10, random_state=42)
+sc.fit(train_scaled, train_target)
+print(sc.score(train_scaled, train_target))  # 0.7731
+print(sc.score(test_scaled, test_target))  #0.775
+# 정확도가 낮은 것을 보니 반복 횟수가 부족한 것 같다.
+# ConvergenceWarning 경고는 모델이 충분히 수렴하지 않았다는 경고. max_iter 값을 늘려주는 것이 좋다. 오류가 아닌 경고이다.
+
+# 확률적 경사 하강법은 점진적 학습이 가능하다. 객체를 새로 만들지 않고 추가로 더 훈련해볼 것.
+# 이어서 훈련할 때는 partial_fit() 메소드 사용. fit()과 사용법이 같지만 호출할 때마다 1에포크 씩 이어서 훈련 가능.
+sc.partial_fit(train_scaled, train_target)
+print(sc.score(train_scaled, train_target))  # 0.815
+print(sc.score(test_scaled, test_target))  # 0.825
+# 에포크가 한 번 더 진행하니 정확도가 올라갔다. 얼마나 해야 하나? 기준이 필요할 것.
+# SGDClassifier는 미니배치 경사 하강법, 배치 경사하강법을 제공하지 않는다.
+```
 ### 에포크와 과대/과소적합(p.209)
+- 에포크 횟수에 따라 과소 또는 과대 적합 가능하다.
+    - 에포크 횟수가 적으면 덜 학습한다. 충분히 많으면 완전히 학습하여 훈련셋에 딱 맞음.
+    - 즉, 적은 에포크는 과소 적합 가능성, 많은 에포크는 과대적합 가능성.
+    - 에포크가 커질수록 훈련셋 점수는 꾸준히 증가하지만, 테스트셋 점수는 어느 순간 감소 시작. 이 지점이 과대적합 시작 지점.
+    - 이 시작 전에 훈련 멈추는 것을 조기종료early stopping이라 한다.
+    - 어디서 꺾이는지 보는 그래프를 그려볼 것.
+```python
+# fit() 대신 partial_fit()만 사용해볼 것.
+# partial_fit() 사용하려면 훈련셋 전체 클래스 레이블을 이 메소드에 전달해줘야 한다.
+# 이를 위해 train_target의 7개 생선 목록을 만든다.
+# 에포크 한 번마다의 점수 기록을 위해 2개의 리스트도 준비한다.
+import numpy as np
+sc = SGDClassifier(loss ='log', random_state=42)
+train_score = []
+test_score = []
+classes = np.unique(train_target)
+
+# 300번 반복해본다.
+for _ in range(0, 300):  # 여기서 _는 나중에 사용하지 않고 버릴 용도로 쓰는 임시의 특별한 변수이다.
+  sc.partial_fit(train_scaled, train_target, classes=classes)
+  train_score.append(sc.score(train_scaled, train_target))
+  test_score.append(sc.score(test_scaled, test_target))
+
+# 그래프로 그려보기
+import matplotlib.pyplot as plt
+plt.plot(train_score)
+plt.plot(test_score)
+plt.show()
+# 100번 정도 이후부터 점수가 벌어지는 것 같다. 확실히 초기엔느 과소적합이라 둘 점수 모두 낮다.
+# 100에 맞추고 다시 훈련해보고 점수를 출력한다.
+sc = SGDClassifier(loss='log', max_iter=100, tol=None, random_state=42)
+sc.fit(train_scaled, train_target)
+print(sc.score(train_scaled, train_target))  # 0.95798
+print(sc.score(test_scaeld, test_target))  # 0.925
+# SGDClassifier는 일정 에포크 동안 성능 향상되지 않으면 알아서 자동으로 멈춘다. tol에서 향상될 최솟값을 지정한다.
+# 이 코드에서는 None으로 지정하여 정해놓은 100까지 무조건 완수하도록 하였다.
+```
+- 확률적 경사 하강법 이용한 회귀 알고리즘은 SGDRegressor로 사용하며 사용법은 같다.
+- loss 매개변수에 대해 알아본다.
+  - 기본 값은 hinge이다.
+    - 힌지손실 hinge loss는 서포트 벡터 머신support vector machine이라 불리는 알고리즘을 위한 손실 함수이다.
+    - 아래는 예시로 힌지손실 사용한 모델 훈련.
+```python
+sc = SGDClassifier(loss='hinge', max_iter=100, tol=None, random_state=42)
+sc.fit(train_scaled, train_target)
+print(sc.score(train_scaled, train_target))  # 0.949579
+print(sc.score(test_scaled, test_target))  # 0.925
+```
+
+  - 요즘은 대량 데이터로 문제 해결하는 경우가 흔하다. 전통적인 머신러닝 방식의 모델 만들기에는 컴퓨터 메모리에 모든 것이 들어가기 힘들다.
+  - 따라서 점진적으로 학습하는 방법이 필요해졌고 이 때 확률적 경사 하강법 사용.
+  - 지금까지 배운 KNN, 선형회귀, 릿지회귀, 라쏘회귀, 로지스틱회귀, 확률적경사하강법 등 보다 더 좋은 알고리즘이 있다. 신경망 알고리즘을 빼고는 머신러닝에서 가장 좋은 성능.
+- SGDClassifier 확률적 경사 하강법을 이용한 분류 모델
+  - loss 매개변수로 최적화할 손실 함수 지정. 기본은 SVM을 위한 hinge. 로지스틱 회귀를 위해선 log 사용.
+  - penalty 매개변수로 규제 종류 지정 가능. 기본값은 L2 규제를 위한 l2이다. L1을 사용하려면 l1이라 해야 함.
+  - 규제 강도는 alpha 매개변수에서 지정. 기본값은 0.0001 이다.
+  - max_iter은 에포크 횟수 지정. 기본값은 1000.
+  - tol은 반복을 멈출 조건. n_iter_no_change 매개변수에서 지정한 에포크 동안 손실이 tol만큼 줄어들지 않으면 알고리즘 중단된다.
+  - 기본값은 0.001이고 n_iter_no_change의 기본값은 5이다.
+- SGDRegressor은 확률적 경사 하강법 이용한 회귀 모델.
+  - loss 매개변수에서 손실함수 지정. 기본값은 제곱 오차 나타내는 squared_loss 이다.
+  - 앞의 classifier에서 사용된 매개변수도 여기서 동일하게 사용 됨.
