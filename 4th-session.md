@@ -90,6 +90,74 @@ print(char_arr[[True, False, True, False, False]])
 bream_smelt_indexes = (train_target == 'Bream') | (train_target == 'Smelt')
 train_bream_smelt = train_scaled[bream_smelt_indexes]
 target_bream_smelt = train_target[bream_smelt_indexes]
+# 도미와 빙어에만 True가 된 bream_smelt_indexes를 train_scaled와 train_target에 불리언 인덱싱을 적용하여 도미, 빙어 데이터만 골라낸 것이다.
+
+from sklearn.linear_model import LogisticRegression
+lr = LogisticRegression()
+lr.fit(train_bream_smelt, target_bream_smelt)
+
+# 처음 5개 샘플 예측
+print(lr.predict(train_bream_smelt[:5]))
+# 예측한 확률도 출력
+print(lr.predict_proba(train_bream_smelt[:5]))
+# 그 결과 샘플마다 두 개의 확률이 출력된다. 첫 열은 0에 대한 확률, 두 번째 열이 1에 대한 확률.
+# 알파벳 순으로 정렬되기 때문에 확인 가능.
+print(lr.classes_)  # 결과: bream smelt
+# 따라서 smelt가 양성클래스이다. 5개 샘플 중 2번째만 smelt일 확률이 높다.
+# 만약 bream도미를 양성클래스로 하고 싶다면? Bream 타깃값을 1로 만들고 나머지를 0으로 만들면 된다.
+
+# 로지스틱 회귀가 학습한 계수를 확인해본다.
+print(lr.coef_, lr.intercept_)
+# 선형회귀와 비슷해보인다. z값도 계산해본다. 처음 5개 샘플에 대한 z값.
+decisions = lr.decision_function(train_bream_smelt[:5])
+print(decisions)
+# 여기서 나온 결과를 시그모이드 함수에 통과시키면 확률을 얻을 수 있다.
+# 다행히 scipy 파이썬의 사이파이 라이브러리에 이 함수가 있다. expit(). np.exp() 함수 사용해 분수 계산하는 것보다 훨씬 편리하고 안전하다.
+
+from scipy.special import expit
+print(expit(decisions))
+# 여기서 나온 결괏값은 predict_proba() 매소드 출력 두 번째 열 값과 동일하다. 즉, decision_function() 메소드는 양성클래스에 대한 z값을 반환하는 것.
+# 이제 이 경험을 바탕으로 7개 생선 분류하는 다중분류 문제를 시도해볼 것.
+```
+- 이진분류와 다중분류의 차이점.
+- LogisticRegression 클래스는 기본적으로 반복적인 알고리즘 사용.
+  - max_iter 매개변수에서 반복횟수 지정하고 기본값은 100이다.
+  - 여기에서 준비한 데이터셋으로 훈련하면 반복횟수가 부족하다는 경고가 발생하여 횟수를 1000으로 늘린다.
+- LogisticRegression은 릿지 회귀 같이 계수의 제곱을 규제한다. 이런 규제를 L2 규제라고도 부른다.
+  - 릿지 회귀는 alpha 매개변수로 규제 양을 조절했다. alpha가 커질수록 규제가 커졌다.
+  - LogisticRegression에서는 매개변수 C가 규제를 조절. 작을수록 규제가 커진다. 기본값은 1. 여기서는 규제 완화를 위해 20으로 늘리겠다.
+```python
+# 7개 생선 데이터 모두 들어있는 train_scaled, train_target 사용.
+lr = LogisticRegression(C=20, max_iter=1000)
+lr.fit(train_scaled, train_target)
+print(lr.score(train_scaled, train_target)  # 0.9328
+print(lr.score(test_scaled, test_target)  # 0.925
+
+# 첫 5개에 대한 예측 출력해본다.
+print(lr.predict(test_scaled[:5]))  # perch smelt pike roach perch
+
+# 5개에 대한 예측 확률 출력. 소수점 4째자리 반올림.
+proba = lr.predict_proba(test_scaled[:5])
+print(np.round(proba, decimals=3))
+# 5개 샘플이라 행이 5개 예측되고, 7개의 종 구분이라 7개의 열이 출력되었다.
+# 각 열이 무슨 종을 뜻하는지 확인해본다.
+print(lr.classes_)
+
+# 선형방정식도 확인해본다.
+print(lr.coef_.shape, lr.intercept_.shape)  # (7, 5) (7, )
+# 5개 특성 사용하므로 coef_의 열은 5이다. 계수와 절편의 행은 모두 7이다.
+# z를 7개나 계산한다는 의미이다.
+# 다중분류는 클래스마다 z값을 하나씩 계산한다.
+# 가장 높은 z를 출력하는 클래스가 예측한 클래스가 된다. 확률은 이진분류에서는 이 값을 시그모이드 함수로 변환한 것인데, 다중분류에서는 소프트맥스softmax 함수 사용하여 변환한다.
+# 시그모이드 함수는 하나의 선형방정식 출력값을 0~1 사이로 압축하는 것이지만, 소프트맥스 함수는 여러 개의 선형방정식 출력값을 0~1로 압축하고 이들 합을 1로 만드는 것.
+# 이를 위해 지수함수 사용하기 때문에 이 함수를 정규화된 지수함수라고 부르기도 한다.
+
+# 소프트맥스 계산법
+# 7개의 z를 이용하여 지수함수를 구한다.
+# e_sum = e^z1 + e^z2 + ... + e^z7
+# 이들을 각각 e_sum으로 나눠서 총합이 1이 되도록.
+# s1 = e^z1 / e_sum ...
+# 시그모이드 함수와 소프트맥스 함수는 나중에 신경망 배울 때 또 다시 등장하므로 여기서 잘 익혀두어야 함.
 ```
 
 ## 4-2. 확률적 경사 하강법(p.199)
