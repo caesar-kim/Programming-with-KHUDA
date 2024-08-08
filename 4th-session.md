@@ -159,7 +159,25 @@ print(lr.coef_.shape, lr.intercept_.shape)  # (7, 5) (7, )
   - 이들을 각각 e_sum으로 나눠서 총합이 1이 되도록.
   - s1 = e^z1 / e_sum ...
   - 시그모이드 함수와 소프트맥스 함수는 나중에 신경망 배울 때 또 다시 등장하므로 여기서 잘 익혀두어야 함.
-
+```python
+# decision_fuction() 메소드를 사용한 이진분류처럼, z1~z7까지 값을 구하고 소프트맥스로 확률을 구해본다.
+decision = lr.decision_function(test_scaled[:5])
+print(np.round(decision, decimals=2))
+# scipy에서 제공하는 소프트맥스 함수를 사용하낟.
+from scipy.special import softmax
+proba = softmax(decision, axis=1)
+print(np.round(proba, decimals=3))
+# axis 매개변수는 소프트맥스 계산 축을 지정한다. 여기선 1로 지정하여 각 행(각 샘플)에 대해 계산한 것.
+# 지정하지 않으면 배열 전체에 대한 소프트맥스를 게산한다.
+```
+- LogisticRegression은 선형분류알고리즘은 로지스틱 회귀를 위한 클래스이다.
+  - solver 매개변수에서 사용할 알고리즘 선택 가능.
+  - 기본값은 lbfgs이다.
+  - 사이킷런 0.17 버전의 'sag'는 확률적 평균 경사 하강법 알고리즘으로 특성과 샘플 수 많을 때 성능 좋다.
+  - 0.19 버전에는 sag의 개선 버전인 saga가 추가되었다.
+  - penalty 매개변수에서 L2규제(릿지) L1규제(라쏘) 방식 선택 가능. 기본은 L2를 의미하는 l2이다.
+  - C 매개변수로 규제 강도 제어. 작을수록 규제가 강하고 기본값은 1이다.
+  - 
 ## 4-2. 확률적 경사 하강법(p.199)
 ### 점진적인 학습(p.200)
 ### SGD Classifier(p.207)
