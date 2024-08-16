@@ -169,8 +169,8 @@ print(dt.feature_importances_)  # 0.1234 0.8686 0.0079 당도가 가장 높다. 
   - 테스트셋은 모델 만들고 딱 한 번만 마지막에 사용하는 것이 좋다.
   - 그렇다면 어떻게 해야 하나?
 ### 검증 세트(p.243)
-- 검증 세트 validation set
-  - 단순하지만 실제로도 많이 쓰인다.
+- 검증 세트 validation set (혹은 개발 세트라고 부른다)
+  - 단순하지만 실제로도 많이 쓰인다. 
   - 20%는 검증 세트로, 20%는 테스트셋으로 둔다.
   - 보통은 20~30% 정도를 떼어놓지만, 문제에 따라 훈련 데이터가 아주 많다면 단 몇 %만 떼어놓아도 전체 데이터를 대표할 수 있다.
   - 검증세트와 훈련세트로 가장 좋은 모델을 고르고, 마지막 테스트셋으로 최종 점수를 평가하는 것이다. 그러면 실전에서 테스트셋과 비슷한 점수를 기대할 수 있게 된다.
@@ -210,6 +210,12 @@ print(dt.score(val_input, val_target))  # 0.8644
   - 이렇게 5-폴드, 10폴드 등을 사용하면 80~90%까지 훈련에 사용할 수 있다. 검증셋이 줄어들지만, 각 폴드에서 계산한 검증 점수를 평균하기 때문에
   - 안정된 점수라고 생각할 수 있다.
   - cross_validate() 교차 검증 함수. 평가할 모델 객체를 첫 번째 매개변수로 전달한다.
+      - 첫 매개변수에 교차 검증 수행할 모델 객체를 전달.
+      - 두 번째, 세번째 매개변수에 특성과 타깃데이터 전달.
+      - scoring 매개변수에 검증에 사용할 평가지표 지정 가능. 기본적으로 분류모델은 accuracy, 회귀모델은 결정계수인 r2 이다.
+      - cv 매개변수에 교차검증 폴드 수나 스플리터 객체 지정 가능. 기본값은 5. 회귀일 때는 KFold, 분류일 때는 StratifiedKFold 클래스로.
+      - n_jobs 는 사용할 CPU 코어 수.
+      - return_train_score 매개변수를 True로 지정하면 훈련셋 점수도 반환한다. 기본값은 False.
   - 그 다음 직접 검증셋을 떼어내지 않고 훈련셋 전체를 cross_validate() 함수에 전달한다.
   - 이 함수의 전신인 cross_val_score() 함수도 있다. 이 함수는 cross_validate() 함수 결과 중에서 test_score 값만 반환한다.
 ```python
@@ -256,6 +262,10 @@ print(np.mean(scores['test_score']))  # 0.8553
       - 이것은 하이퍼파라미터 탐색과 교차검증을 한 번에 수행한다. 별도로 cross_validate() 함수를 호출할 필요가 없다.
       - min_impurity_decrease 매개변수의 최적값을 찾아본다.
         - 이를 위해 GridSearchCV 클래스를 임포트 하고 탐색할 매개변수와 탐색할 값의 리스트를 딕셔너리로 만든다.
+            - 이 클래스는 교차 검증으로 하이퍼파라미터 탐색 수행. 최상의 모델 찾은 후 훈련 셋 전체를 사용해 최종 모델을 훈련한다.
+            - 첫 매개변수로 그리드서치를 수행할 모델 객체를 전달한다.
+            - 두 번째 매개변수에는 탐색할 모델의 매개변수와 값을 전달한다.
+            - scoring, cv, n_jobs, return_train_score 매개변수는 cross_validate() 함수와 동일하다.
 ```python
 from sklearn.model_selection import GridSearchCV
 params = {'min_impurity_decrease': [0.0001, 0.0002, 0.0003, 0.0004, 0.0005]}
@@ -318,7 +328,57 @@ print(np.max(gs.cv_results_['mean_test_score']))  0.8683
   - 근데 앞에서 0.0001씩 간격을 정하는 방법은 임의로 선택한 간격인데, 더 좁거나 넓은 간격으로 시도할 수는 없는가?
 - 랜덤 서치 Random Search
   - 매개변수 값이 수치일 때 범위나 간격 지정이 어려울 수 있다. 또 너무 많은 매개변수 조건으로 그리드서치 수행 시간이 오래 걸릴 수 있다.
-  - 
+  - 이럴 때 랜덤 서치 기법 사용.
+  - 매개변수 값의 목록을 전달하는 것이 아닌 매개변수를 샘플링할 수 있는 확률 분포 객체를 전달한다.
+      - 이를 위해 싸이파이에서 확률 분포 클래스를 임포트 해본다.
+      - 싸이파이scipy는 파이썬 과학 라이브러리. 적분, 보간, 선형대수, 확률 등 포함한 수치 계산 전용 라이브러리. 코랩에도 이미 설치됨.
+      - uniform 과 randint 클래스는 모두 주어진 범위에서 고르게 값을 뽑는다. 균등 분포에서 샘플링 한다고 말한다.
+      - randint는 정수, uniform은 실수값을 뽑는다.
+```python
+from scipy.stats import uniform, randint
+
+# 0~10 사이의 randint 객체를 만들고 10개 숫자를 샘플링 해본다.
+rgen = randint(0, 10)
+rgen.rvs(10)  # 임의로 샘플링 하는 거라 반복마다 다르게 나올 수 있다.
+
+# 1000개를 뽑아서 각각의 숫자를 확인해본다.
+np.unique(rgen.rvs(1000), return_counts=True)
+
+# uniform 도 동일하게 사용 가능.
+ugen = uniform(0, 1)
+ugen.rvs(10)
+# 난수 발생기라 생각하면 된다. 랜덤서치에 randint와 uniform 클래스 객체를 넘겨주고 총 몇 번 샘플링해서 최적의 매개변수를 찾으라고 명령 가능.
+# 샘플링 횟수는 시스템 자원 허락 하에서 최대로 하는 게 좋을 것.
+
+# 탐색할 매개변수의 딕셔너리를 만들어본다.
+# 여기서는 min_samples_leaf 매개변수를 탐색변수에 추가한다. 리프 노드가 되기 위한 최소 개수.
+params = {'min_impurity_decrease': uniform(0.0001, 0.001),  # 0.0001~0.001 사이의 실수를 샘플링한다.
+  'max_depth': randint(20, 50),    # 20~50 사이 정수
+  'min_samples_split': randint(2, 25),
+  'min_samples_leaf': randint(1, 25),
+  }
+# 샘플링 횟수는 랜덤 서치 클래스인 RandomizedSearchCV의  n_iter 매개변수에 지정한다.
+from sklearn.model_selection import RandomizedSearchCV
+gs = RandomizedSearchCV(DecisionTreeClassifier(random_state=42), params, n_iter=100, n_jobs=-1, random_state=42)
+gs.fit(train_input, train_target)
+# params에 정의된 매개변수 범위에서 총 100번(n_iter)을 샘플링하여 교차검증 수행하고 최적의 매개변수 조합 찾는다.
+# 그리드 서치보다 교차검증 수는 줄이면서 넓은 영역을 효과적으로 탐색 가능.
+
+# 최적의 매개변수 조합을 출력해본다.
+print(gs.best_params_)  # depth39 impurity0.00034 minsampes7 minsplit13
+
+# 최고의 교차검증 점수 확인
+print(np.max(gs.cv_results_['mean_test_score']))  # 0.8695
+
+# 최적의 모델은 best_estimator_에 저장되어 있다. 이를 최종 모델로 정하고 성능 확인해본다.
+dt = gs.best_estimator_
+print(dt.score(test_input, test_target))  0.86
+```
+    - RandomizedSearchCV는 교차검증으로 랜덤한 하이퍼파라미터 탐색을 수행한다. 최상의 모델 찾은 후 훈련셋 전체를 사용해 최종 모델을 훈련한다.
+      - 첫 매개변수로 그리드서치 수행할 모델 객체 전달.
+      - 두번째 매개변수에는 탐색할 모델의 매개변수와 확률분포객체 전달.
+      - scoring, cv, n_jobs, return_train_score 매개변수는 cross_validate()와 동일.
+      
 ## 5-3. 트리의 앙상블(p.263)
 ### 정형 데이터와 비정형 데이터(p.264)
 ### 랜덤 포레스트Random Forest(p.265)
