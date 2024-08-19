@@ -393,6 +393,51 @@ print(dt.score(test_input, test_target))  0.86
       - 대부분 DT 기반으로 만들어져 있다.
     - 비정형 데이터는 7장의 신경망 알고리즘을 사용해야 한다. 규칙성 찾기가 어려워 전통적 머신러닝 방법으로 만들기 까다롭다.
 ### 랜덤 포레스트Random Forest(p.265)
+  - 앙상블 학습의 대표 주자로 안정적인 성능 덕에 널리 쓰인다.
+  - DT를 랜덤하게 만들어 DT의 숲을 만든다. 그리고 각 DT의 예측을 활용해 최종 예측을 만든다.
+    - 각 트리 훈련하기 위한 데이터를 랜덤하게 만든다.
+    - 입력한 훈련 데이터에서 랜덤하게 샘플 추출하여 훈련 데이터를 만든다. 이 때 한 샘플이 여러번 중복 추출 가능.
+    - 부트스트랩 샘플bootstrap sample이라 한다. (데이터에서 중복을 허용하여 데이터를 샘플링하는 방식)
+    - 기본적으로 훈련셋 크기와 같게 추출한다.
+    - 각 노드 분할할 때 전체 특성 중 일부 특성을 무작위로 골라서 이 중 최선의 분할을 찾는다.
+      - 분류 모델이 RandomForestClassifier는 기본적으로 전체 특성 개수 제곱근만큼의 특성을 고른다.
+      - 회귀 모델인 RandomForestRegressor는 전체 특성을 사용한다.
+    - 사이킷런은 100개의 DT를 이렇게 훈련한다.
+      - 분류일 때는 각 트리 클래스별 확률 구해서 가장 높은 확률을 가진 클래스를 예측으로 삼는다.
+      - 회귀일 때는 단순히 각 트리의 예측을 평균한다.
+    - 랜덤하게 선택한 샘플과 특성을 사용하기 때문에 훈련셋에 과대적합되는 것을 막아주고
+    - 검증셋과 테스트셋에서 안정적인 성능을 얻을 수 있다.
+    - 종종 기본 매개변수 설정만으로도 아주 좋은 결과를 낸다.
+```python
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+wine = pd.read_csv('https://bit.ly/wine-date')
+data = wine[['alcohol', 'sugar', 'pH']].to_numpy()
+target = wine['class'].to_numpy()
+train_input, test_input, train_target, test_target = train_test_split(data, target, test_size=0.2, random_state=42)
+
+from sklearn.model_selection import cross_validate
+from sklearn.ensemble import RandomForestClassifier
+rf = RandomForestClassifier(n_jobs=-1, random_state=42) # 100개의 DT를 사용하므로 CPU 모든 코어를 사용하는 것이 좋다.
+# cross_validat() 함수를 통해 교차검증도 진행할 것. 이것도 -1 사용하여 최대한 병렬 교차검증 수행.
+# return_train_score을 True로 지정하면 검증점수 뿐 아니라 훈련셋 점수도 같이 반환된다. 기본값은 False이다.
+
+scores = cross_validate(rf, train_input, train_target, return_train_score=True, n_jobs=-1)
+print(np.mean(scores['train_score']), np.means(scores['test_score']))
+# 0.9973 0.8905
+
+# 랜덤 포레스트는 DT의 앙상블이기 때문에 DTClassifier가 제공하는 매개 변수를 모두 제공한다.
+# DT의 큰 장점 중 하나인 특성 중요도도 계산한다.
+# 랜덤포레스트의 특성 중요도는 각 DT의 특성 중요도를 취합한 것.
+rf.fit(train_input, train_target)
+print(rf.feature_importances_)
+# 0.23 0.50 0.26
+# 이전 결과보다 당도의 중요도가 감소하고 나머지 둘의 중요도가 증가했다.
+# 랜덤포레스트는 특성 일부를 랜덤하게 선택하여 훈련하기 때문에
+# 하나의 특성에 과도하게 집중하지 않고 좀 더 많은 특성이 훈련에 기여할 기회를 얻는다.
+# 과대적합 줄이고 일반화 성능 높이는데 도움이 된다.
+```
 ### 엑스트라 트리Extra Tree(p.269)
 ### 그레이디언트 부스팅Gradient boosting(p.271)
 ### 히스토그램 기반 그레이디언트 부스팅Histogram-based Gradient Boosting(p.273)
