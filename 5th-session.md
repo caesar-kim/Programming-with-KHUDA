@@ -437,7 +437,166 @@ print(rf.feature_importances_)
 # 랜덤포레스트는 특성 일부를 랜덤하게 선택하여 훈련하기 때문에
 # 하나의 특성에 과도하게 집중하지 않고 좀 더 많은 특성이 훈련에 기여할 기회를 얻는다.
 # 과대적합 줄이고 일반화 성능 높이는데 도움이 된다.
+
+
+# 자체적으로 모델 평가하는 점수도 얻을 수 있다.
+# 부트스트랩 샘플에 포함되지 않고 남는 샘플이 있다. 이런 것을 OOB out of bad 이라고 한다.
+# 이걸 검증셋처럼 사용해서 평가 가능.
+# oob_score 매개변수를 True로 지정하면 된다. 기본은 False.
+
+rf = RandomForestClassifier(oob_score=True, n_jobs=-1, random_state=42)
+rf.fit(train_input, train_target)
+print(rf.oob_score_)  # 0.8934
+# OOB 점수를 사용하면 교차검증을 대신할 수 있어서 결과적으로 훈련셋에 더 많은 샘플을 사용할 수 있다.
 ```
+
 ### 엑스트라 트리Extra Tree(p.269)
+- 엑스트라 트리
+  - 랜덤포레스트와 비슷하게 동작한다. 기본적으로 100개 DT를 훈련한다.
+  - RF처럼 DT의 대부분의 매개변수를 지원한다.
+  - 또한 전체 특성 중 일부 특성을 랜덤하게 선택하여 노드를 분할하는데 사용한다.
+  - 차이점
+    - RF와 ET의 차이는 부트스트랩 샘플을 사용하지 않는다는 것.
+    - ET는 각 DT를 만들 때 전체 훈련셋을 사용한다.
+    - 노드를 분할할 때 가장 좋은 분할을 찾는 것이 아니라 무작위로 분할한다.
+    - DecisionTreeClassifier의 splitter을 random으로 지정했었는데 이것과 같은 맥락이다.
+    - 하나의 DT에서 특성을 무작위로 분할하면 성능이 낮아지겠지만, 많은 트리를 앙상블하기 때문에 과대적합 막고 검증 셋 점수 높이는 효과 가능.
+
+```python
+from sklearn.ensemble import ExtraTreesClassifier
+et = ExtraTreesClassifier(n_jobs=-1, random_state=42)
+scores = cross_validate(et, train_input, train_target, return_train_score=True, n_jobs=-1)
+print(np.mean(scores['train_score']), np.mean(scores['test_score']))  # 0.9974 0.9997
+# RF와 비슷한 결과가 나옴. 특성이 많지 않은 예제라서 두 모델의 차이가 크지 않다.
+# 보통 ET가 무작위성이 더 커서 RF보다 더 많은 DT를 훈련해야 한다.
+# 하지만 랜덤하게 노드를 분할하기 때문에 계산속도가 빠르다는 것이 장점이다.
+# DT는 최적의 분할을 찾는데 많은 시간이 소요되는데, 특히 고려할 특성의 개수가 많을 때 더 심하다. 무작위로 나눈다면 더 빠르게 트리 구성 가능할 것.
+
+et.fit(train_input, train_target)
+print(et.feature_importances_)
+# 0.2018 0.5524 0.2757
+# 이것도 마찬가지로 당도의 특성 중요도가 감소하였다.
+```
+-  회귀버전은 ExtraTreesRegressor 클래스이다.
+- 이 둘과 다른 방식을 사용하는 앙상블 학습이 있다.
 ### 그레이디언트 부스팅Gradient boosting(p.271)
+- 그레이데언트 부스팅
+  - 깊이가 얕은 DT를 사용하여 이전 트리의 오차를 보완하는 방식으로 앙상블 하는 방법.
+  - GradientBoostingClassifier 클래스
+  - 깊이가 3인 결정트리 100개를 사용한다.
+  - 깊이가 얕아서 과대적합에 강하며 높은 일반화 성능 기대 가능.
+
+  - 그레디언트
+    - 4장에서 사용한 경사하강법 사용하여 트리를 앙상블에 추가한다.
+    - 분류에서는 로지스틱 손실함수, 회귀에서는 평균제곱오차함수를 사용한다.
+    - 4장 경사하강법은 손실함수를 산으로 정의하고 가장 낮은 곳을 찾아내려오는 과정으로 설명했으.ㅁ
+    - 가장 낮은 곳 오는 방법은 모델의 가중치와 절편을 조금씩 바꾸는 방법.
+    - 그레디언트 부스팅은 DT를 계속 추가하면서 가장 낮은 곳을 찾아 이동한다.
+    - 손실함수의 낮은 곳으로 갈 때는 천천히 조금씩 이동해야 한다고 했었는데, 그래서 여기도 얕은 트리를 사용하는 것이다.
+
+```python
+from sklearn.ensemble import GradientBoostingClassifier
+gb = GradientBoostingClassifier(random_state=42)
+scores = cross_validate(gb, train_input, train_target, return_train_score=True, n_jobs=-1)
+print(np.mean(scores['train_score']), np.mean(scores['test_score']))  # 0.8881 0.8720
+# 거의 과대적합되지 않았다.
+# 이 방식은 DT 수를 늘려도 과대적합에 매우 강하다.
+# 학습률 증가시키고 트리 개수 늘리면 더 성능이 향상될 수 있다.
+
+gb = GradientBoostingClassifier(n_estimators=500, learning_rate=0.2, random_state=42)
+scores = cross_validate(gb, train_input, train_target, return_train_score=True, n_jobs=-1)
+print(np.mean(scores['train_score']), np.mean(scores['test_score']))  # 0.9464 0.8780
+# DT를 500개로 5배나 늘렸지만 과대적합을 잘 억제하고 있다.
+# 학습률인 learning_rate의 기본값은 0.1이다.
+
+# 특성 중요도는 랜덤포레스트보다 일부 특성(당도)에 더 집중한다.
+gb.fit(train_input, train_target)
+print(gb.feature_importances_)
+# 0.158 0.680 0.161
+
+# 트리 훈련에 사용할 훈련셋 비율을 정하는 subsample 매개변수도 있다.
+# 기본값은 1.0으로 전체 훈련셋 사용한다.
+# 비율로 얼마만큼 사용할지 정하면 된다.
+# 이는 확률적 경사 하강법, 미니배치 경사 하강법과 유사한 것 같다.
+
+# 일반적으로 그래디언트 부스팅이 RF보다 조금 더 높은 성능 가능.
+# 하지만 순서대로 트리 추가해야 해서 속도가 느리다.
+# n_jobs라는 매개변수가 없다.
+# 회귀버전은 GradientBoostingRegressor이다.
+```
+
+
 ### 히스토그램 기반 그레이디언트 부스팅Histogram-based Gradient Boosting(p.273)
+- 그레디언트 부스팅 속도와 성능을 더욱 개선한 방법.
+- 정형 데이터 다루는 머신러닝 알고리즘 중에 가장 인기가 높다.
+
+- 입력 특성을 256개 구간으로 나눈다. 따라서 노드 분할 시 최적의 분할을 매우 빠르게 찾을 수 있다.
+- 256개 구간 중 하나 떼어놓고 누락된 값을 위해서 사용한다.
+- 따라서 입력에 누락된 특성이 있더라도 이를 따로 전처리할 필요가 없다.
+
+- HistGradientBoostingClassifier 클래스.
+  - 일반적으로 기본 매개변수에서 안정적인 성능 얻을 수 있음.
+  - xmfl rotn wlwjdgksmsep n_estimators 대신 부스팅 반복횟수인 max_iter을 사용한다. 이것으로 성능을 높일 수 있다.
+-  사이킷런의 HGB는 아직 테스트 과정에 있다. 모듈을 임포트해야 사용 가능.
+
+```python
+from sklearn.experimental import enable_hist_gradient_boosting
+from sklearn.ensemble import HistGradientBoostingClassifier
+hgb = HistGradientBoostingClassifier(random_state=42)
+scores = cross_validate(hgb, train_input, train_target, return_train_score=True)
+print(np.mean(scores['train_score']), np.mean(scores['test_scores']))  # 0.9321 0.8801
+
+# 과대적합 억제하면서 그레디언트 부스팅보다는 조금 더 높은 성능 제공.
+
+hgb.fit(train_input, train_target)
+print(rf.feature_importances_)
+# 0.23 0.50 0.26
+# RF처럼 다른 특성에도 집중했다. 다양한 특성을 잘 평가한다고 할 수 있을 것.
+
+hgb.score(test_input, test_target)
+# 0.8723
+# 2절 랜덤 서치에서의 정확도인 86% 보다 더 좋다.
+```
+- 회귀 버전은 HistGradientBoostingRegressor 클래스이다.
+- XGBoost 라이브러리에서도 HGB를 사용할 수 있다. 코랩에서도 사용 가능하며 사이킷런의 cross_validate() 함수와 함께 사용 가능.
+  - 이 라이브러리는 다양한 부스팅 알고리즘을 지원한다.
+  - tree_method 매개변수를 hist로 지정하면 HGB를 사용 가능.
+```python
+from xgboost import XGBClassifier
+xgb = XGBClassifier(tree_method='hist', random_state=42)
+scores = cross_validate(xgb, train_input, train_target, reture_train_score=True)
+print(np.mean(scores['train_score']), np.mean(scores['test_score']))  # 0.8827 0.8708
+
+from lightgbm import LGBMClassifier
+lgb = LGBMClassifier(random_state=42)
+scores = cross_validate(lgb, train_input, train_target, return_train_score=True, n_jobs=-1)
+print(np.mean(scores['train_score']), np.mean(scores['test_score']))  # 0.9338 0.8789
+```
+  - 또 다른 라이브러리는 MSFT의 LightGBM이다.
+    - 최신 기술 많이 적용하고 있어서 인기가 늘어나는 중.
+    - 코랩에 있어서 바로 사용 가능.
+  - 사이킷런의 HGB도 여기서 영향을 많이 받았다.
+
+- RandomForestClassifier
+  - n_estimators: 앙상블 구성 트리 개수 지정, 기본값 100.
+  - criterion: 불순도 지정. 기본값은 지니 불순도인 gini이며, entropy도 사용 가능.
+  - max_depth: 트리 성장 최대 깊이. None이면 리프노드가 순수하거나 min_sampels_split 보다 샘플 개수 적을 때까지 성장함.
+  - min_samples_split은 노드 나누기 위한 최소 샘플 개수. 기본값은 2.
+  - max_features는 매개변수 최적 분할을 위해 탐색할 특성의 개수 지정. 기본값은 auto로, 특성 개수의 제곱근.
+  - bootstrap은 부트스트랩 샘플을 사용할지 지정. 기본값은 True.
+  - oob_score은 OOB 샘플 사용하여 훈련한 모델을 평가할지 지정. 기본은 False.
+  - n_jobs는 병렬 시행에 사용할 CPU 코어 수 지정. 기본은 1로 1개 사용. -1은 시스템의 모든 코어 사용.
+- ExtraTreesClassifier
+  -  n_estimators, criterion, max_depth, min_samples_split, max_features, n_jobs 는 RF와 동일.
+  -  bootstrap: 기본값이 False이다.
+  -  oob_score: 기본값은 false이다.
+- GradientBoostingClassifier
+  - loss: 손실함수 지정. 기본값은 로지스틱손실함수인 deviance이다.
+  - learning_rate: 트리가 앙상블에 기여하는 정도 조절. 기본 0.1
+  - n_estimators: 부스팅 단계 수행하는 트리 개수. 기본 100.
+  - subsample: 훈련셋 샘플 비율 지정. 기본 1.0
+  - max_depth: 개별 회귀 트리의 최대 깊이. 기본 3.
+- HistGradientBoostingClassifier
+  - learning_rate: 학습율 혹은 감쇠율이라 함. 기본 0.1이며 1.0이면 감쇠가 전혀 없다.
+  - max_iter: 부스팅 단계 수행하는 트리 개수. 기본 100.
+  - max_bins: 입력 데이터 나눌 구간 개수. 기본 255. 이보다 크게 지정할 수 없다. 여기에 1개 구간이 누락된 값을 위해 추가된다.
