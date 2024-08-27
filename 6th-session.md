@@ -313,9 +313,186 @@ plt.show()
       - n_init은 반복횟수를 지정한다. 기본값은 10.
     - max_iter은 k평균 알고리즘 한 번 실행에서 최적의 센트로이드 찾기 위해 반복할 수 있는 최대 횟수. 기본값 200.
 ## 6-3. 주성분 분석(p.318)
+- 과일 사진 이벤트는 성공
+  - 매일 여러 과일 사진이 업로드 중.
+  - 업로드된 사진을 클러스터로 분류하여 폴더 별로 저장.
+  - 그러나 너무 많은 사진이 등록되어 저장 공간이 부족하다.
 ### 차원과 차원 축소(p.319)
+- 차원
+  - 데이터가 가진 속성을 차원이라고 했다. 과일 사진에는 10000개의 픽셀이 있으니 10000개의 특성인 셈.
+  - 이 10000개의 차원을 줄일 수 있으면 저장공간 절약 가능.
+  - 다차원 배열에서는 차원은 축 개수가 된다. 그런데 1차원 배열인 벡터에서는 원소의 개수가 축 개수가 된다.
+- 차원 축소 알고리즘 dimensionality reduction
+  - 특성이 많으면 선형 모델 성능이 높아지고 훈련셋에 쉽게 과적합된다고 했었다.
+  - 차원 축소는 데이터를 가장 잘 나타내는 일부 특성 선택하여 데이터 크기를 줄이고 지도학습 모델의 성능을 향상시킬 수 있는 방법.
+  - 줄어든 차원에서 다시 원본 차원으로 손실을 최대한 줄이면서 복원도 가능.
+  - 대표적인 차원 축소 알고리즘인 주성분 분석 PCA principal component analysis
 ### 주성분 분석 소개(p.320)
+- PCA
+  - 데이터에 있는 분산이 큰 방향을 찾는 것으로 이해 가능.
+  - 분산은 데이터가 널리 퍼진 정도. 분산이 큰 방향을 데이터로 잘 표현하는 벡터로 생각 가능.
+    - 이 벡터를 주성분 principal component 라고 부른다.
+    - 이 주성분 벡터는 원본 데이터에 있는 어떤 방향이다.
+  - 따라서 주성분 벡터의 원소 개수는 원본 데이터셋 특성 개수와 같다.
+  - 샘플 데이터를 주성분벡터에 직각으로 투영하면 1차원 데이터를 만들 수 이다.
+    - 주성분이 가장 분산이 큰 방향이기 때문에 주성분에 투영하여 바꾼 데이터는 원본이 갖고 있는 특성을 가장 잘 나타내고 있다.
+  - 첫 주성분을 찾았다면 이 벡터에 수직이고 분산이 가장 큰 다음 방향을 찾는다. 이것이 두 번째 주성분.
+    - 일반적으로 주성분은 원본 특성 개수만큼 찾을 수 있다.
+    - 정확히는 원본 특성 개수와 샘플 개수 중 작은 값만큼 찾을 수 있지만, 일반적으로 비지도학습은 대량의 샘플로 수행하기 때문에 보통 원본 특성 개수.
 ### PCA 클래스(p.322)
+```python
+# 과일사진을 웹페이지에서 다운로드하여 넘파이 배열로 적재한다.
+!wget https://bit.ly/fruits_300 -0 fruits_300.npy
+import numpy as np
+fruits = np.load('fruits_300.npy')
+fruits_2d = fruits.reshape(-1, 100*100)
+
+# sklearn.decomposition 모듈 아래 PCA 클래스로 주성분 분석 알고리즘 제공.
+# n_components 매개변수에 주성분 개수를 지정해야 한다.
+# 비지도 학습이라 fit() 메소드에 타깃 값은 넣지 않는다.
+from sklearn.decomposition import PCA
+pca = PCA(n_components=50)
+pca.fit(fruits_2d)
+
+# 주성분은 components_ 속성에 저장
+print(pac.components_.shape)
+# (50, 10000)
+
+# 주성분 개수를 50개로 지정해서 이 배열의 첫 차원은 50이 나온다. 50개의 주성분을 찾은 것.
+# 두 번째 차원은 항상 원본 데이터 특성 개수와 같은 10000이다.
+# 원본데이터와 같은 차원이므로 100X100 크기의 이미지처럼 출력 가능.
+draw_fruits(pca.components_.reshape(-1, 100, 100))
+
+# 이 주성분은 원본 데이터에서 가장 분산이 큰 방향 순서대로 나타낸 것.
+# 즉, 데이터셋의 어떤 특징을 잡아낸 것.
+
+# 주성분을 찾았으므로, 원본 데이터를 주성분에 투영하여 특성 개수를 10000개에서 50개로 줄일 수 있다.
+# 마치 원본데이터를 각 주성분으로 분해하는 것으로 생각 가능.
+# PCA의 transform() 메소드로 원본데이터 차원을 50으로 줄일 수 있다.
+print(fruits_2d.shape)
+# (300, 10000)
+fruits_pca = pca.transform(fruits_2d)
+print(fruits_pca.shape)
+# (300, 50)
+```
+  - fruits_2d는 (300, 10000) 크기의 배열이었다. 50개의 주성분을 찾은 PCA 모델을 사용해 이를 (300, 50) 크기 배열로 변환했다.
+  - 이제 fruits_pca 배열은 50개 특성을 가진 데이터이다.
+  - 데이터를 1/200이나 줄였다. 이를 다시 원상 복구할 수도 있나?
+
 ### 원본 데이터 재구성(p.324)
+  - 10000개 특성을 50개로 줄였으니 손실이 발생했을 것.
+  - 하지만 최대한 분산이 큰 방향으로 데이터를 투영했기 때문에 상당 부분 재구성 가능하다.
+  - 이를 위한 메소드는 inverse_transform() 이다. 50개 차원으로 축서한 데이터를 전달해 10000개 특성으로 복원해본다.
+```python
+fruits_inverse = pca.inverse_transform(fruits_pca)
+print(fruits_inverse.shape)
+# (300, 10000)  10000개 특성으로 복원 되었다.
+# 이를 100개씩 나누어 출력해본다.
+
+fruits_reconstruct = fruits_inverse.reshape(-1, 100, 100)
+for start in [0, 100, 200]:
+  draw_fruits(fruits_reconstruct[start:start+100])
+  print("\n")
+```
+- 거의 모든 과일이 잘 복원 되었다.
+  - 일부 흐리고 번지기도 했지만 불과 50개 특성을 10000개로 늘린 것을 감안하면 잘 된 것 같다.
+  - 만약 주성분을 최대로 사용했다면 원본 데이터를 재구성할 수 있을 것.
+  - 50개의 특성은 얼마나 분산을 보존하고 있는 것인가?
 ### 설명된 분산(p.325)
+- 설명된 분산explained variance
+  - 주성분이 원본 데이터의 분산을 얼마나 잘 나타내는지 기록한 값.
+  - explained_variance_ratio_ 에 각 주성분 분산 비율이 기록되어 있다.
+  - 당연히 첫 번재 주성분의 설명된 분산이 가장 크다.
+  - 이 50개의 비율을 모두 더하면 50개 주성분으로 표현한 총 분산 비율을 얻을 수 있다.
+```python
+print(np.sum(pca.explained_variance_ratio_))
+# 0.9215
+plt.plot(pca.explained_variance_ratio_)
+```
+- 92%가 넘는 분산을 유지한다.
+  - 복원한 이미지의 품질이 높은 이유가 여기 있다.
+  - 설명한 분산 비율을 그래프로 그려보면 적절한 주성분 개수 찾는데 도움이 된다.
+  - 처음 10개가 대부분의 분산을 표현하고 있다.
+  - 그 뒤부터는 설명되는 분산이 비교적 작다.
+- 이번에는 PCA로 차원 축소된 데이터를 사용하여 지도학습모델을 훈련해본다.
 ### 다른 알고리즘과 함께 사용하기(p.327)
+- 원본 데이터와 PCA로 차원 축소한 데이터를 지도학습에 적용해서 어떤 차이가 있는지 알아본다.
+- 3개 과일 사진 분류이므로 로지스틱 회귀 모델 사용할 것.
+```python
+from sklearn.linear_model import LogisticRegression
+lr = LogisticRegression()
+# 타깃값은 사과0, 파인애플1, 바나나2로 지정한다.
+# 파이썬 리스트와 정수를 곱하면 리스트 안의 원소를 정수만큼 반복한다.
+target = np.array([0]*100 + [1]*100 + [2]*100)
+
+# 원본데이터인 fruits_2d를 사용. cross_validate()로 교차검증도 한다.
+from sklearn.model_selection import cross_validate
+scores = cross_validate(lr, fruits_2d, target)
+print(np.mean(scores['test_score']))  # 0.9966
+print(np.mean(scores['fit_time']))  # 0.9422
+
+# 교차 검증 점수는 0.997로 매우 높다. 특성이 10000개라 300개 샘플에서는 과적합 모델을 금방 만들 수 있다.
+# cross_validate() 함수가 반환하는 딕셔너리에는 fit_time 항목에 교차검증 폴드 훈련 시간이 기록되어 있다.
+# 약 0.94초. 이를 PCA로 축소한 데이터를 사용했을 때와 비교해본다.
+scores = cross_validate(lr, fruits_pca, target)
+print(np.mean(scores['test_score']))  # 1.0
+print(np.mean(scores['fit_time']))  # 0.0325
+
+# 50개 특성만 이용했는데도 정확도가 100% 이고, 훈련 시간은 0.03초로 20배 감소했다.
+# PCA로 차원 축소하면 저장공간 뿐 아니라 훈련속도도 높일 수 있다.
+# PCA 클래스 사용할 때 n_components 매개변수에 주성분 개수를 지정했다.
+# 대신 원하는 설명된 분산 비율도 입력할 수 있다. 이 비율에 도달할 때까지 자동으로 주성분을 찾는다.
+# 50%에 달하는 주성분을 찾도록 모델 만든다.
+pca = PCA(n_components=0.5)
+pca.fit(fruits_2d)
+# 개수 대신 0~1 사이 실수를 입력하면 된다.
+
+print(pca.n_components_)
+# 2
+#  단 2개만으로 원본 데이터의 50% 분산 표현 가능하다.
+
+# 이 모델을 원본 데이터로 변환.
+fruits_pca = pca.transform(fruits_2d)
+print(fruits_pca.shape)
+# (300, 2)
+
+# 교차검증 결과도 확인
+scores = cross_validate(lr, fruits_pca, target)
+print(np.mean(scores['test_score']))  # 0.9933
+print(np.mean(scores['fit_time']))  # 0.0412
+# 이 코드를 입력하면 로지스틱 회귀 모델이 완전히 수렴하지 않아서 반복횟수를 증가하라는 경고(Convergence Warning)가 출력된다. 하지만 교차검증 결과가 충분히 좋아서 무시해도 좋다.
+# 2개 특성만으로도 0.9933 정확도가 나온다.
+
+from sklearn.cluster import KMeans
+km = KMeans(n_cluster=3, random_state=42)
+km.fit(fruits_pca)
+print(np.unique(km.labels_, return_counts=True))
+# (array[0, 1, 2], dtype=int32), array([91, 99, 110]))
+
+# 2절에서 원본 데이터를 사용했을 때와 거의 비슷한 결과가 나온다.
+# 이미지를 출력해본다.
+for label in range(0, 3):
+  draw_fruits(fruits[km.labels_ == lable])
+  print("\n")
+
+# 2절에서 찾은 클러스터와 비슷하게 파인애플에는 사과가 몇 개 섞여 들어갔다.
+# 훈련 데이터 차원 줄이면 시각화라는 장점을 얻을 수 있다.
+# 3개 이하로 차원을 줄이면 화면에 출력하기 비교적 쉽다.
+# fruits_pca 데이터는 특성이 2개라 2차원으로 표현 가능.
+
+for label in range(0, 3):
+  data = fruits_pca[km.labels_ == lable]
+  plt.scatter(data[:, 0], data[:, 1])
+plt.legend(['apple', 'banana', 'pineapple'])
+plt.show()
+```
+- 클러스터의 산점도를 보면 잘 구분되는 것을 볼 수 있다. 2개 특성만으로 로지스틱 회귀모델 교차검증 점수가 99%인 이유를 알 수 있다.
+- 그림을 보면 사과와 파인애플 경계가 가깝다. 따라서 혼동이 일어날 수도 있을 것 같다. 데이터를 시각화하면 이러한 예상치 못한 통찰을 얻을 수 있다.
+
+- PCA
+  - n_components 는 주성분 개수 지정. 기본값 None인데, 샘플 개수와 특성 개수 중 작은 것의 값을 사용한다.
+  - random_state는 넘파이 난수 시드값 지정
+  - components_ 훈련셋에서 찾은 주성분이 저장된다.
+  - explained_variance_ 속성에는 설명된 분산이 저장되고,
+  - explained_variance_ratio_ 에는 설명된 분산의 비율이 저장된다.
+  - inverse_transform() 메소드는 transform() 메소드로 차원을 축소시킨 데이터를 다시 원본 차원으로 복원한다.
